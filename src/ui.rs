@@ -1,10 +1,11 @@
 //! 新分頁畫面：搜尋、隨機影片、登入、管理收藏、設定精靈
 
 use crate::chrome::{self, to_js};
+use crate::playlist;
 use crate::store;
 use crate::videos::{ago, pick_random, query, split_input, Video};
 use crate::youtube::{self, CANCELLED};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::future::Future;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -15,6 +16,8 @@ use web_sys::{
 
 thread_local! {
     static LOGGING_IN: Cell<bool> = const { Cell::new(false) };
+    /// 從播放清單取出的影片（含標題），按「加入」時就不必逐部查標題
+    static KNOWN: RefCell<Vec<Video>> = const { RefCell::new(Vec::new()) };
 }
 fn logging_in() -> bool {
     LOGGING_IN.with(|c| c.get())
@@ -301,6 +304,31 @@ async fn render_yt(refresh_sources: bool) {
     }
 }
 
+// ---------- 播放清單 → 影片連結 ----------
+
+async fn fetch_playlist() {
+    let raw = input_value("pl-url");
+    let Some(id) = playlist::parse_playlist_id(&raw) else {
+        let _ = el("pl-url").focus();
+        return text("msg", "請貼上播放清單網址（網址裡要有 list=…）");
+    };
+    let btn: HtmlButtonElement = by_id("pl-fetch");
+    btn.set_disabled(true);
+    text("msg", "讀取播放清單中…");
+    let res = playlist::fetch_all(&id, |n| text("msg", &format!("讀取播放清單中…已找到 {n} 部"))).await;
+    btn.set_disabled(false);
+    match res {
+        Ok(list) => {
+            let links: Vec<String> = list.iter().map(|v| v.watch_url()).collect();
+            by_id::<HtmlTextAreaElement>("urls").set_value(&links.join("\n"));
+            by_id::<HtmlInputElement>("pl-url").set_value("");
+            text("msg", &format!("已取出 {} 部影片的連結，可按「複製」或直接「加入」", list.len()));
+            KNOWN.with(|k| *k.borrow_mut() = list);
+        }
+        Err(e) => text("msg", &format!("⚠ {e}")),
+    }
+}
+
 // ---------- 啟動 ----------
 
 pub fn start() {
@@ -384,13 +412,32 @@ pub fn start() {
             let btn: HtmlButtonElement = by_id("add");
             btn.set_disabled(true);
             text("msg", "加入中…");
-            let (added, skipped) = store::add_many(&lines).await;
+            let known = KNOWN.with(|k| k.borrow().clone());
+            let (added, skipped) = store::add_many_known(&lines, &known).await;
             btn.set_disabled(false);
             ta.set_value("");
             let extra = if skipped > 0 { format!("，略過 {skipped} 筆（重複或無效）") } else { String::new() };
             text("msg", &format!("已加入 {added} 部{extra}"));
             render_list().await;
             render().await;
+        })
+    });
+    // 播放清單 → 所有影片連結（放進文字框，可複製或直接加入）
+    on_click("pl-fetch", || spawn(fetch_playlist()));
+    listen(&el("pl-url"), "keydown", |e| {
+        if e.unchecked_ref::<KeyboardEvent>().key() == "Enter" {
+            el("pl-fetch").click();
+        }
+    });
+    on_click("copy-urls", || {
+        spawn(async {
+            let v = by_id::<HtmlTextAreaElement>("urls").value();
+            let n = split_input(&v).len();
+            if n == 0 {
+                return text("msg", "沒有可複製的連結");
+            }
+            chrome::clipboard_write(v.trim()).await;
+            text("msg", &format!("已複製 {n} 個連結 ✓"));
         })
     });
     on_click("yt-sync", || {

@@ -141,6 +141,23 @@ pub async fn fetch(url: &str, bearer: Option<&str>, method: &str) -> R<Resp> {
     Ok(Resp { status, json })
 }
 
+/// 回傳 (HTTP 狀態碼, 內文文字)。帶上 youtube.com 的 cookie，讓「不公開」清單也讀得到
+pub async fn fetch_text(url: &str, method: &str, json_body: Option<&str>) -> R<(u16, String)> {
+    let mut init = serde_json::json!({ "method": method, "credentials": "include" });
+    if let Some(b) = json_body {
+        init["body"] = b.into();
+        init["headers"] = serde_json::json!({ "Content-Type": "application/json" });
+    }
+    let r = JsFuture::from(fetch_raw(url, to_js(&init))).await.map_err(err_msg)?;
+    let r: web_sys::Response = r.dyn_into().map_err(|_| "fetch 回傳格式錯誤".to_string())?;
+    let status = r.status();
+    let text = match r.text() {
+        Ok(p) => JsFuture::from(p).await.ok().and_then(|v| v.as_string()).unwrap_or_default(),
+        Err(_) => String::new(),
+    };
+    Ok((status, text))
+}
+
 pub async fn clipboard_write(text: &str) {
     let _ = JsFuture::from(clipboard_write_raw(text)).await;
 }

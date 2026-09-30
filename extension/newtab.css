@@ -166,3 +166,12 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 }
 .toast-msg { flex: 1; white-space: pre-line; word-break: break-word; }
 .toast .x { flex: none; }
+
+/* 播放清單 → 影片連結 */
+.pl-row { display: flex; gap: 8px; margin-top: 14px; }
+#pl-url {
+  flex: 1; min-width: 0; padding: 9px 12px; font: inherit; font-size: 14px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg);
+}
+#pl-url:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.pl-row .btn { flex: none; }

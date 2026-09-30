@@ -77,10 +77,17 @@
     </section>
 
     <h3>手動加入</h3>
+    <div class="pl-row">
+      <input id="pl-url" type="text" spellcheck="false" placeholder="貼上播放清單網址，一次取出所有影片連結">
+      <button id="pl-fetch" class="btn" type="button">取出連結</button>
+    </div>
     <textarea id="urls" rows="4" placeholder="貼上 YouTube 網址，一行一個（可一次貼很多）"></textarea>
     <div class="m-row">
       <span id="msg" class="msg"></span>
-      <button id="add" class="btn primary">加入</button>
+      <span class="actions">
+        <button id="copy-urls" class="btn" type="button">複製</button>
+        <button id="add" class="btn primary">加入</button>
+      </span>
     </div>
     <ul id="list" class="list"></ul>
   </dialog>

@@ -4,6 +4,7 @@
 //! `extension/newtab.js` 與 `extension/background.js` 只負責載入 wasm。
 
 pub mod config;
+pub mod playlist;
 pub mod videos;
 
 mod chrome;

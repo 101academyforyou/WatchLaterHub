@@ -6,6 +6,7 @@ Chrome 新分頁：Google 風格搜尋框，上方隨機顯示一部你在 YouTu
 - **Continue with Google**：選任何 Google 帳號登入，自動載入按讚的影片與播放清單，每天同步
 - 預設就有 3 部收藏影片，不登入也能用
 - 「管理收藏」貼網址手動加入，或在 YouTube 上按右鍵 →「加入 WatchLaterHub」
+- 「管理收藏」貼上**播放清單網址** →「取出連結」：一次列出清單裡所有影片連結，可複製或直接加入（公開／不公開清單皆可，不需登入、不耗 API 配額）
 - Google 搜尋、好手氣、AI 模式
 
 > 「稍後觀看」清單 YouTube 官方 API 不開放讀取，無法同步。
@@ -41,6 +42,7 @@ src/
   config.rs    ★ 開發者設定：Google Client ID、預設影片、同步頻率
   videos.rs    純邏輯（網址解析、去重、隨機、OAuth 解析），有單元測試
   store.rs     收藏清單（chrome.storage）
+  playlist.rs  播放清單網址 → 所有影片連結（讀取公開頁面，有單元測試）
   youtube.rs   Google 登入（帳號選擇畫面）與 YouTube Data API 同步
   ui.rs        新分頁畫面（DOM 操作）
   chrome.rs    Chrome 擴充功能 API 的 Rust 綁定

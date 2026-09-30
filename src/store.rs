@@ -43,6 +43,11 @@ async fn fetch_info(id: &str) -> (String, String) {
 
 /// 加入多個網址，回傳 (加入數, 略過數)
 pub async fn add_many(texts: &[String]) -> (usize, usize) {
+    add_many_known(texts, &[]).await
+}
+
+/// 同 `add_many`，但 `known` 裡已知標題的影片不必再查 oEmbed（播放清單匯入時很多部，會快很多）
+pub async fn add_many_known(texts: &[String], known: &[Video]) -> (usize, usize) {
     let mut list = get_manual().await;
     let mut ids: Vec<String> = vec![];
     for id in texts.iter().filter_map(|t| parse_id(t)) {
@@ -51,7 +56,10 @@ pub async fn add_many(texts: &[String]) -> (usize, usize) {
         }
     }
     for id in &ids {
-        let (title, author) = fetch_info(id).await;
+        let (title, author) = match known.iter().find(|v| &v.id == id) {
+            Some(v) => (v.title.clone(), v.author.clone()),
+            None => fetch_info(id).await,
+        };
         list.push(Video { id: id.clone(), title, author, added_at: Some(chrome::now()) });
     }
     save_manual(&list).await;
