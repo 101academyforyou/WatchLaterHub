@@ -1,0 +1,29 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Install wasm-pack
+        run: curl -sSf https://rustwasm.github.io/wasm-pack/installer/init.sh | sh
+      - name: Test
+        run: cargo test
+      - name: Clippy (wasm)
+        run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
+      - name: Build extension
+        run: ./build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WatchLaterHub
+          path: extension/

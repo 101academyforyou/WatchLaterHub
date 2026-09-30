@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="WatchLaterHub">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dist/WatchLaterHub.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>WatchLaterHub</title>
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+  <div class="topbar">
+    <button id="open-manage" class="chip">☰ 管理收藏 <span id="count"></span></button>
+    <button class="gbtn gbtn-sm js-login" hidden><img class="g-logo" src="https://developers.google.com/identity/images/g-logo.png" alt=""><span>Continue with Google</span></button>
+    <button id="avatar" class="avatar" hidden title="YouTube 帳號"><img alt=""></button>
+  </div>
+
+  <main>
+    <!-- 隨機影片 -->
+    <section id="video" class="video" hidden>
+      <a id="v-link" class="thumb">
+        <img id="v-img" alt="">
+        <span class="play" aria-hidden="true"></span>
+      </a>
+      <div class="v-info">
+        <div class="v-text">
+          <a id="v-title" class="v-title"></a>
+          <div id="v-author" class="v-author"></div>
+        </div>
+        <button id="shuffle" class="chip" title="換一部">⟳ 換一部</button>
+      </div>
+    </section>
+
+    <!-- 還沒有收藏時 -->
+    <section id="empty" class="empty" hidden>
+      <div id="empty-title" class="empty-title"></div>
+      <div id="empty-desc" class="empty-desc"></div>
+      <button id="login-big" class="gbtn gbtn-lg js-login" hidden><img class="g-logo" src="https://developers.google.com/identity/images/g-logo.png" alt=""><span>Continue with Google</span></button>
+      <div id="login-error" class="login-error"></div>
+    </section>
+
+    <form id="search" action="https://www.google.com/search" method="get" autocomplete="off">
+      <div class="box">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input id="q" name="q" type="text" autofocus aria-label="搜尋">
+        <button type="button" id="ai" class="pill" title="以 Google AI 模式搜尋">✦ AI 模式</button>
+      </div>
+      <div class="buttons">
+        <button type="submit" class="btn">Google 搜尋</button>
+        <button type="button" id="lucky" class="btn">好手氣</button>
+      </div>
+    </form>
+  </main>
+
+  <!-- 管理收藏 -->
+  <dialog id="manage">
+    <div class="m-head">
+      <h2>我的收藏</h2>
+      <button id="close-manage" class="x" aria-label="關閉">✕</button>
+    </div>
+
+    <section class="yt">
+      <h3>YouTube 帳號</h3>
+      <div id="yt-off" hidden>
+        <p class="note">登入後會自動載入你按讚的影片與播放清單，每天自動同步。</p>
+        <button class="gbtn gbtn-md js-login"><img class="g-logo" src="https://developers.google.com/identity/images/g-logo.png" alt=""><span>Continue with Google</span></button>
+      </div>
+      <div id="yt-on" hidden>
+        <div id="yt-who" class="who"></div>
+        <div class="note">要從哪些清單隨機挑影片？</div>
+        <div id="yt-sources" class="sources"></div>
+        <div class="m-row">
+          <span id="yt-status" class="msg"></span>
+          <span class="actions">
+            <button id="yt-disconnect" class="btn">登出</button>
+            <button id="yt-sync" class="btn primary">立即同步</button>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <h3>手動加入</h3>
+    <textarea id="urls" rows="4" placeholder="貼上 YouTube 網址，一行一個（可一次貼很多）"></textarea>
+    <div class="m-row">
+      <span id="msg" class="msg"></span>
+      <button id="add" class="btn primary">加入</button>
+    </div>
+    <ul id="list" class="list"></ul>
+  </dialog>
+
+
+  <!-- 第一次使用：開發者設定精靈（只需做一次） -->
+  <dialog id="setup">
+    <div class="m-head">
+      <h2>啟用 Google 登入（只需設定一次）</h2>
+      <button id="close-setup" class="x" aria-label="關閉">✕</button>
+    </div>
+    <p class="note">Google 規定每個「用 Google 登入」的應用程式都要有一組 OAuth Client ID。照下面 4 步做完，之後按一下就能選帳號登入。</p>
+    <ol class="steps">
+      <li>
+        <b>啟用 YouTube API</b>
+        <a class="link" href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">開啟 → 按「啟用」</a>
+        <div class="hint">第一次使用會先要你建立專案，名稱隨意。</div>
+      </li>
+      <li>
+        <b>設定 OAuth 同意畫面</b>
+        <a class="link" href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener">開啟 → 按「開始」</a>
+        <div class="hint">選「外部」，填應用程式名稱與 email。在「目標對象」把你自己的 Google 帳號加入測試使用者。</div>
+      </li>
+      <li>
+        <b>建立 OAuth 用戶端</b>
+        <a class="link" href="https://console.cloud.google.com/auth/clients/create" target="_blank" rel="noopener">開啟</a>
+        <div class="hint">應用程式類型選「<b>網頁應用程式</b>」，在「已授權的重新導向 URI」貼上：</div>
+        <div class="copy-row">
+          <code id="redirect-uri"></code>
+          <button id="copy-uri" class="chip" type="button">複製</button>
+        </div>
+      </li>
+      <li>
+        <b>貼上用戶端 ID</b>
+        <input id="client-id" type="text" spellcheck="false" placeholder="1234567890-xxxx.apps.googleusercontent.com">
+        <div id="setup-error" class="login-error"></div>
+      </li>
+    </ol>
+    <button id="save-setup" class="gbtn gbtn-md"><img class="g-logo" src="https://developers.google.com/identity/images/g-logo.png" alt=""><span>儲存並 Continue with Google</span></button>
+  </dialog>
+
+  <script type="module" src="newtab.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+[package]
+name = "watchlaterhub"
+version = "4.0.0"
+edition = "2021"
+description = "WatchLaterHub: a Chrome new-tab page that shows a random video from your YouTube favorites, with Google search"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "Window", "Document", "Location", "Element", "HtmlElement", "Node", "NodeList",
+  "HtmlInputElement", "HtmlTextAreaElement", "HtmlButtonElement", "HtmlDialogElement",
+  "HtmlImageElement", "HtmlAnchorElement", "CssStyleDeclaration",
+  "Event", "EventTarget", "KeyboardEvent", "Response",
+]
+
+[profile.release]
+opt-level = "s"
+lto = true
