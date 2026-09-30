@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C5CFF"/>
+      <stop offset="1" stop-color="#2F6BFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="url(#g)"/>
+  <!-- 時鐘弧線（稍後觀看） -->
+  <path d="M64 22 A42 42 0 1 1 26.4 45.3" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/>
+  <path d="M14 36 L32 34 L28 52 Z" fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+  <!-- 播放鍵 -->
+  <path d="M54 46 L86 64 L54 82 Z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+</svg>
