@@ -159,19 +159,34 @@ async fn login() {
     }
     set_logging_in(true);
     text("login-error", "");
+    hide("toast", true);
     set_login_buttons_disabled(true);
     render().await;
 
     if let Err(e) = youtube::connect().await {
+        chrome::warn(&format!("WatchLaterHub login failed: {e}"));
         let low = e.to_lowercase();
         let msg = if e == CANCELLED || low.contains("cancel") || low.contains("did not approve") || low.contains("user closed") {
             CANCELLED.to_string()
+        } else if low.contains("could not be loaded") {
+            // Google 拒絕了授權要求（HTTP 400），Chrome 只會回這句模糊的錯誤
+            format!(
+                "Google 拒絕了登入要求，通常是 OAuth 用戶端設定不對：\n\
+                 • 用戶端類型要是「網頁應用程式」\n\
+                 • 已授權的重新導向 URI 要完全等於 {}\n\
+                 • config.rs 的 Client ID 要屬於這個用戶端\n\
+                 • 剛建立或修改的用戶端要等 5 分鐘以上才會生效",
+                chrome::redirect_url()
+            )
         } else {
             e
         };
         text("login-error", &msg);
         if dialog("manage").open() {
             text("yt-status", &format!("⚠ {msg}"));
+        } else if el("empty").hidden() {
+            // 已有影片時，空白頁的 #login-error 看不到，改用浮動提示
+            show_toast(&msg);
         }
     }
     set_logging_in(false);
@@ -180,6 +195,11 @@ async fn login() {
     if dialog("manage").open() {
         render_yt(false).await;
     }
+}
+
+fn show_toast(msg: &str) {
+    text("toast-msg", msg);
+    hide("toast", false);
 }
 
 // ---------- 設定精靈 ----------
@@ -310,6 +330,7 @@ pub fn start() {
         listen(&b, "click", |_| spawn(login()));
     }
     on_click("avatar", || el("open-manage").click());
+    on_click("toast-close", || hide("toast", true));
 
     // 設定精靈
     on_click("close-setup", || dialog("setup").close());

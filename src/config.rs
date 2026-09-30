@@ -3,7 +3,7 @@
 /// Google Cloud「網頁應用程式」OAuth 用戶端 ID。
 /// 設成空字串時，使用者第一次按 Continue with Google 會看到設定精靈。
 pub const GOOGLE_CLIENT_ID: &str =
-    "627463072769-ob84bkvfbeap56a9sga62a81cqb4ju5h.apps.googleusercontent.com";
+    "627463072769-oifqn6c89lfnt2gihs9vi03pdpeo4fdh.apps.googleusercontent.com";
 
 /// 預設收藏：第一次安裝時自動加入（使用者刪掉後不會再出現）
 /// (影片 ID, 標題, 頻道)

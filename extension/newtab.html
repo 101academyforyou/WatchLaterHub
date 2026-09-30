@@ -122,6 +122,12 @@
     <button id="save-setup" class="gbtn gbtn-md"><img class="g-logo" src="https://developers.google.com/identity/images/g-logo.png" alt=""><span>儲存並 Continue with Google</span></button>
   </dialog>
 
+  <!-- 登入錯誤提示：不論畫面狀態都看得到 -->
+  <div id="toast" class="toast" role="alert" hidden>
+    <div id="toast-msg" class="toast-msg"></div>
+    <button id="toast-close" class="x" aria-label="關閉">✕</button>
+  </div>
+
   <script type="module" src="newtab.js"></script>
 </body>
 </html>

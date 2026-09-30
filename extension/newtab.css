@@ -156,3 +156,13 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
   border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg);
 }
 #client-id:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+/* 登入錯誤提示 */
+.toast {
+  position: fixed; top: 64px; right: 20px; z-index: 10; display: flex; gap: 8px; align-items: flex-start;
+  width: min(420px, calc(100vw - 32px)); padding: 12px 12px 12px 16px; border-radius: 10px;
+  background: var(--bg); color: var(--fg); border: 1px solid #d93025; box-shadow: var(--shadow);
+  font-size: 13px; line-height: 1.55;
+}
+.toast-msg { flex: 1; white-space: pre-line; word-break: break-word; }
+.toast .x { flex: none; }
