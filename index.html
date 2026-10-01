@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WatchLaterHub｜收藏了，就別忘了看</title>
+<meta name="description" content="每開一個新分頁，WatchLaterHub 從你在 YouTube 收藏的影片裡隨機挑一部給你，再配上熟悉的 Google 搜尋框。免費、開源的 Chrome 擴充功能。">
+<meta property="og:title" content="WatchLaterHub｜收藏了，就別忘了看">
+<meta property="og:description" content="每開一個新分頁，WatchLaterHub 從你在 YouTube 收藏的影片裡隨機挑一部給你，再配上熟悉的 Google 搜尋框。免費、開源的 Chrome 擴充功能。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="icon128.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icon16.png">
+<link rel="apple-touch-icon" href="icon128.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=Quicksand:wght@600;700&amp;display=swap">
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:#F4F9FF;color:#1B2745;font-family:"Noto Sans TC","PingFang TC",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#3767D0}a:hover{color:#2A52A8}
+details summary{list-style:none;cursor:pointer}
+details summary::-webkit-details-marker{display:none}
+details[open] .faq-plus{transform:rotate(45deg)}
+.faq-plus{transition:transform .2s}
+@media (max-width:640px){.nav-link{display:none}nav{padding:12px 16px !important;flex-wrap:nowrap !important}}
+</style>
+</head>
+<body>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: #F4F9FF;">
+
+<!-- 導覽列 -->
+<header style="position: sticky; top: 0; z-index: 5; background: rgba(244, 249, 255, 0.88); backdrop-filter: blur(10px); border-bottom: 1px solid #E1ECFA;">
+<nav style="max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+<a href="#top" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #1B2745;">
+<svg width="36" height="36" viewBox="0 0 128 128" aria-hidden="true"><defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9ED8FF"></stop><stop offset="1" stop-color="#6FA8FF"></stop></linearGradient><mask id="mk1"><rect width="128" height="128" fill="#fff"></rect><circle cx="78" cy="50" r="30" fill="#000"></circle></mask></defs><rect width="128" height="128" rx="30" fill="url(#lg1)"></rect><circle cx="60" cy="66" r="34" fill="#fff" mask="url(#mk1)"></circle><path d="M96 30 l3.2 7.8 7.8 3.2 -7.8 3.2 -3.2 7.8 -3.2 -7.8 -7.8 -3.2 7.8 -3.2 Z" fill="#fff"></path></svg>
+<span style="font-family: Quicksand, sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.2px;">WatchLaterHub</span>
+</a>
+<div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+<a class="nav-link" href="#features" style="padding: 10px 14px; border-radius: 999px; text-decoration: none; color: #3D4B68; font-size: 15px;">功能</a>
+<a class="nav-link" href="#how" style="padding: 10px 14px; border-radius: 999px; text-decoration: none; color: #3D4B68; font-size: 15px;">怎麼用</a>
+<a class="nav-link" href="#faq" style="padding: 10px 14px; border-radius: 999px; text-decoration: none; color: #3D4B68; font-size: 15px;">常見問題</a>
+<a href="#install" style="margin-left: 6px; padding: 11px 20px; border-radius: 999px; background: #3767D0; color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 500;">加到 Chrome</a>
+</div>
+</nav>
+</header>
+
+<!-- 主視覺 -->
+<section id="top" style="padding: 56px 24px 40px;">
+<div style="max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 56px;">
+<div style="flex: 1 1 400px; display: flex; flex-direction: column; gap: 24px;">
+<div style="align-self: flex-start; display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: #E3F0FF; color: #2F5BB8; font-size: 14px; font-weight: 500;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg>
+免費的 Chrome 新分頁擴充功能
+</div>
+<h1 style="margin: 0; font-size: clamp(38px, 5.6vw, 64px); line-height: 1.18; font-weight: 700; letter-spacing: 1px;">收藏了，<br>就別忘了看。</h1>
+<p style="margin: 0; max-width: 520px; font-size: 19px; line-height: 1.8; color: #4A5773;">每開一個新分頁，WatchLaterHub 從你在 YouTube 收藏的影片裡隨機挑一部給你，再配上熟悉的 Google 搜尋框。那些「晚點再看」的影片，終於有機會被看完。</p>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px;">
+<a href="#install" style="display: flex; align-items: center; gap: 10px; padding: 15px 26px; border-radius: 999px; background: #3767D0; color: #FFFFFF; text-decoration: none; font-size: 17px; font-weight: 500; box-shadow: 0 8px 24px rgba(55, 103, 208, 0.28);">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+免費加到 Chrome
+</a>
+<a href="#how" style="display: flex; align-items: center; padding: 15px 24px; border-radius: 999px; background: #FFFFFF; color: #1B2745; text-decoration: none; font-size: 17px; font-weight: 500; border: 1px solid #D5E3F6;">看看怎麼運作</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; color: #55627D; font-size: 14px;">
+<span style="display: flex; align-items: center; gap: 6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>不用登入也能用</span>
+<span style="display: flex; align-items: center; gap: 6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>資料只存在你的瀏覽器</span>
+<span style="display: flex; align-items: center; gap: 6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>開源（MIT 授權）</span>
+</div>
+</div>
+
+<!-- 新分頁示意 -->
+<div style="flex: 1 1 460px; position: relative; padding: 28px; border-radius: 36px; background: linear-gradient(145deg, #A6DBFF 0%, #74ABFF 100%);">
+<svg width="120" height="120" viewBox="0 0 128 128" aria-hidden="true" style="position: absolute; top: -44px; right: -6px;"><defs><mask id="mk2"><rect width="128" height="128" fill="#fff"></rect><circle cx="82" cy="46" r="32" fill="#000"></circle></mask></defs><circle cx="62" cy="66" r="40" fill="#FFFFFF" mask="url(#mk2)"></circle></svg>
+<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="position: absolute; top: 34px; left: 30px;"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="#FFFFFF"></path></svg>
+<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="position: absolute; bottom: 30px; right: 36px;"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="#FFFFFF"></path></svg>
+<div style="position: relative; z-index: 1; border-radius: 18px; background: #FFFFFF; overflow: hidden; box-shadow: 0 24px 60px rgba(27, 39, 69, 0.22);">
+<div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #EEF3FA;">
+<span style="width: 11px; height: 11px; border-radius: 50%; background: #F3B4B0;"></span>
+<span style="width: 11px; height: 11px; border-radius: 50%; background: #F5D58E;"></span>
+<span style="width: 11px; height: 11px; border-radius: 50%; background: #A9DDB5;"></span>
+<div style="margin-left: 10px; display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 10px; border-radius: 10px 10px 0 0; background: #FFFFFF; font-size: 12px; color: #3D4B68;">
+<svg width="14" height="14" viewBox="0 0 128 128" aria-hidden="true"><defs><linearGradient id="lg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9ED8FF"></stop><stop offset="1" stop-color="#6FA8FF"></stop></linearGradient><mask id="mk3"><rect width="128" height="128" fill="#fff"></rect><circle cx="78" cy="50" r="30" fill="#000"></circle></mask></defs><rect width="128" height="128" rx="30" fill="url(#lg3)"></rect><circle cx="60" cy="66" r="34" fill="#fff" mask="url(#mk3)"></circle></svg>
+新分頁
+</div>
+</div>
+<div style="padding: 22px 26px 28px; display: flex; flex-direction: column; gap: 16px;">
+<div style="position: relative; aspect-ratio: 16 / 9; border-radius: 14px; background: linear-gradient(135deg, #2A3A63 0%, #45609A 60%, #7FA6E8 100%); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+<svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true" style="position: absolute; top: 18%; left: 16%;"><circle cx="12" cy="12" r="6" fill="#FFFFFF" opacity="0.7"></circle></svg>
+<svg width="8" height="8" viewBox="0 0 24 24" aria-hidden="true" style="position: absolute; top: 30%; right: 22%;"><circle cx="12" cy="12" r="6" fill="#FFFFFF" opacity="0.6"></circle></svg>
+<svg width="7" height="7" viewBox="0 0 24 24" aria-hidden="true" style="position: absolute; bottom: 24%; left: 30%;"><circle cx="12" cy="12" r="6" fill="#FFFFFF" opacity="0.5"></circle></svg>
+<div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.92); display: flex; align-items: center; justify-content: center;">
+<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="#2A3A63" stroke="#2A3A63" stroke-width="1.5" stroke-linejoin="round"></path></svg>
+</div>
+<span style="position: absolute; left: 12px; bottom: 10px; padding: 3px 8px; border-radius: 6px; background: rgba(27, 39, 69, 0.7); color: #FFFFFF; font-size: 11px;">三個月前收藏</span>
+</div>
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<span style="font-size: 16px; font-weight: 700; color: #1B2745;">Python 開發環境介紹（Colab）</span>
+<span style="font-size: 13px; color: #55627D;">AI 幫幫忙</span>
+</div>
+<span style="flex: none; padding: 6px 12px; border-radius: 999px; background: #EEF3FA; font-size: 12px; color: #3D4B68;">換一部</span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 999px; border: 1px solid #DDE5F0; box-shadow: 0 1px 6px rgba(32, 33, 36, 0.12); color: #8A95AB; font-size: 14px;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A95AB" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="flex: 1;">搜尋 Google 或輸入網址</span>
+<span style="padding: 4px 10px; border-radius: 999px; background: #EEF3FA; color: #3D4B68; font-size: 12px;">AI 模式</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- 共鳴 -->
+<section style="padding: 48px 24px;">
+<div style="max-width: 880px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; gap: 16px; align-items: center;">
+<p style="margin: 0; font-size: 15px; font-weight: 500; letter-spacing: 3px; color: #3767D0;">你一定也有這種清單</p>
+<h2 style="margin: 0; font-size: clamp(28px, 3.6vw, 40px); line-height: 1.4; font-weight: 700;">按了讚、存進清單，<br>然後就再也沒打開過。</h2>
+<p style="margin: 0; max-width: 640px; font-size: 17px; line-height: 1.9; color: #4A5773;">好影片不是不想看，只是被埋在清單最深處。WatchLaterHub 不催你、不推播，只在你每天打開新分頁的那一秒，輕輕把一部老收藏放到眼前。</p>
+</div>
+</section>
+
+<!-- 功能 -->
+<section id="features" style="padding: 48px 24px 72px;">
+<div style="max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px;">
+<div style="display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center;">
+<h2 style="margin: 0; font-size: clamp(28px, 3.4vw, 38px); font-weight: 700;">小小的新分頁，剛剛好的功能</h2>
+<p style="margin: 0; font-size: 17px; color: #4A5773;">不多也不少，打開就能用。</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: #FFFFFF; border: 1px solid #E1ECFA;">
+<div style="width: 48px; height: 48px; border-radius: 14px; background: #E3F0FF; display: flex; align-items: center; justify-content: center;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"></path><path d="M4 20L21 3"></path><path d="M21 16v5h-5"></path><path d="M15 15l6 6"></path><path d="M4 4l5 5"></path></svg>
+</div>
+<h3 style="margin: 0; font-size: 20px; font-weight: 700;">每個分頁，一部老收藏</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A5773;">從你的收藏裡隨機挑一部，而且不會連續出現同一部。不想看這部？按「換一部」就好。</p>
+</div>
+
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: #FFFFFF; border: 1px solid #E1ECFA;">
+<div style="width: 48px; height: 48px; border-radius: 14px; background: #E3F0FF; display: flex; align-items: center; justify-content: center;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg>
+</div>
+<h3 style="margin: 0; font-size: 20px; font-weight: 700;">用 Google 登入，自動同步</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A5773;">按一下 Continue with Google，自動載入你按讚的影片和播放清單，之後每天自動更新。想從哪些清單挑，自己勾選。</p>
+</div>
+
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: #FFFFFF; border: 1px solid #E1ECFA;">
+<div style="width: 48px; height: 48px; border-radius: 14px; background: #E3F0FF; display: flex; align-items: center; justify-content: center;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
+</div>
+<h3 style="margin: 0; font-size: 20px; font-weight: 700;">播放清單，一次搬進來</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A5773;">貼上播放清單網址，按「取出連結」，清單裡每一部影片的連結都整理好了，可以直接複製，或一鍵加入收藏。</p>
+</div>
+
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: #FFFFFF; border: 1px solid #E1ECFA;">
+<div style="width: 48px; height: 48px; border-radius: 14px; background: #E3F0FF; display: flex; align-items: center; justify-content: center;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-6 1.5L10 20z"></path></svg>
+</div>
+<h3 style="margin: 0; font-size: 20px; font-weight: 700;">看到好影片，右鍵就收</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A5773;">在 YouTube 上按右鍵，選「加入 WatchLaterHub」。影片頁面或影片連結都可以，標題會自動抓好。</p>
+</div>
+
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: #FFFFFF; border: 1px solid #E1ECFA;">
+<div style="width: 48px; height: 48px; border-radius: 14px; background: #E3F0FF; display: flex; align-items: center; justify-content: center;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+</div>
+<h3 style="margin: 0; font-size: 20px; font-weight: 700;">熟悉的 Google 搜尋</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A5773;">搜尋框、「好手氣」和 AI 模式都在原本的位置，新分頁該有的一樣都不少。</p>
+</div>
+
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: #FFFFFF; border: 1px solid #E1ECFA;">
+<div style="width: 48px; height: 48px; border-radius: 14px; background: #E3F0FF; display: flex; align-items: center; justify-content: center;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+</div>
+<h3 style="margin: 0; font-size: 20px; font-weight: 700;">資料留在你身邊</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A5773;">收藏清單只存在你自己的瀏覽器。登入只要求 YouTube 唯讀權限，不會幫你按讚、留言或改動任何清單。</p>
+</div>
+
+</div>
+</div>
+</section>
+
+<!-- 怎麼用 -->
+<section id="how" style="padding: 72px 24px; background: #FFFFFF; border-top: 1px solid #E1ECFA; border-bottom: 1px solid #E1ECFA;">
+<div style="max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px;">
+<div style="display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center;">
+<h2 style="margin: 0; font-size: clamp(28px, 3.4vw, 38px); font-weight: 700;">三個步驟，今晚就開始</h2>
+<p style="margin: 0; font-size: 17px; color: #4A5773;">不到一分鐘就能設定好。</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: #F4F9FF;">
+<span style="width: 40px; height: 40px; border-radius: 50%; background: #3767D0; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: Quicksand, sans-serif; font-weight: 700; font-size: 18px;">1</span>
+<h3 style="margin: 0; font-size: 20px; font-weight: 700;">安裝擴充功能</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A5773;">把 WatchLaterHub 加到 Chrome。裝好就內建幾部影片，不登入也能馬上試。</p>
+</div>
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: #F4F9FF;">
+<span style="width: 40px; height: 40px; border-radius: 50%; background: #3767D0; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: Quicksand, sans-serif; font-weight: 700; font-size: 18px;">2</span>
+<h3 style="margin: 0; font-size: 20px; font-weight: 700;">帶進你的收藏</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A5773;">用 Google 登入自動同步，或在「管理收藏」貼上影片、播放清單網址。</p>
+</div>
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: #F4F9FF;">
+<span style="width: 40px; height: 40px; border-radius: 50%; background: #3767D0; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: Quicksand, sans-serif; font-weight: 700; font-size: 18px;">3</span>
+<h3 style="margin: 0; font-size: 20px; font-weight: 700;">打開新分頁</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A5773;">每開一次，就遇見一部你曾經想看的影片。看或不看，都由你決定。</p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- 常見問題 -->
+<section id="faq" style="padding: 72px 24px;">
+<div style="max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+<h2 style="margin: 0; text-align: center; font-size: clamp(28px, 3.4vw, 38px); font-weight: 700;">常見問題</h2>
+<div style="display: flex; flex-direction: column; gap: 12px;">
+<details style="border-radius: 18px; background: #FFFFFF; border: 1px solid #E1ECFA; padding: 0 22px;">
+<summary style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; font-size: 17px; font-weight: 500;">要付費嗎？<svg class="faq-plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></summary>
+<p style="margin: 0 0 20px; font-size: 15px; line-height: 1.8; color: #4A5773;">完全免費，而且是開源專案（MIT 授權），程式碼都公開。</p>
+</details>
+<details style="border-radius: 18px; background: #FFFFFF; border: 1px solid #E1ECFA; padding: 0 22px;">
+<summary style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; font-size: 17px; font-weight: 500;">一定要登入 Google 嗎？<svg class="faq-plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></summary>
+<p style="margin: 0 0 20px; font-size: 15px; line-height: 1.8; color: #4A5773;">不用。你可以手動貼上影片網址、用播放清單一次匯入，或在 YouTube 上按右鍵加入。登入只是讓按讚的影片和播放清單自動同步。</p>
+</details>
+<details style="border-radius: 18px; background: #FFFFFF; border: 1px solid #E1ECFA; padding: 0 22px;">
+<summary style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; font-size: 17px; font-weight: 500;">可以同步 YouTube 的「稍後觀看」嗎？<svg class="faq-plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></summary>
+<p style="margin: 0 0 20px; font-size: 15px; line-height: 1.8; color: #4A5773;">YouTube 官方沒有開放讀取「稍後觀看」清單。你可以把想看的影片存到一般播放清單，WatchLaterHub 就能同步或匯入。</p>
+</details>
+<details style="border-radius: 18px; background: #FFFFFF; border: 1px solid #E1ECFA; padding: 0 22px;">
+<summary style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; font-size: 17px; font-weight: 500;">會讀取我的哪些資料？<svg class="faq-plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></summary>
+<p style="margin: 0 0 20px; font-size: 15px; line-height: 1.8; color: #4A5773;">只會讀取你按讚的影片、播放清單和帳號 email（用來記住登入的帳號），而且是唯讀。收藏清單存在你的瀏覽器裡，登出時會清除同步下來的影片。</p>
+</details>
+<details style="border-radius: 18px; background: #FFFFFF; border: 1px solid #E1ECFA; padding: 0 22px;">
+<summary style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; font-size: 17px; font-weight: 500;">不想看到某部影片怎麼辦？<svg class="faq-plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3767D0" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></summary>
+<p style="margin: 0 0 20px; font-size: 15px; line-height: 1.8; color: #4A5773;">在「管理收藏」裡按影片旁的 ✕ 就能移除；也可以取消勾選整個播放清單，不再從那裡挑影片。</p>
+</details>
+</div>
+</div>
+</section>
+
+<!-- 行動呼籲：夜空 -->
+<section id="install" style="padding: 24px 24px 72px;">
+<div style="position: relative; max-width: 1120px; margin: 0 auto; padding: 72px 32px; border-radius: 36px; background: linear-gradient(160deg, #22325C 0%, #3A5796 100%); color: #FFFFFF; text-align: center; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+<svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true" style="position: absolute; top: 18%; left: 12%;"><circle cx="12" cy="12" r="6" fill="#FFFFFF" opacity="0.7"></circle></svg>
+<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="position: absolute; top: 28%; right: 16%;"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="#FFFFFF" opacity="0.9"></path></svg>
+<svg width="8" height="8" viewBox="0 0 24 24" aria-hidden="true" style="position: absolute; bottom: 22%; left: 22%;"><circle cx="12" cy="12" r="6" fill="#FFFFFF" opacity="0.5"></circle></svg>
+<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="position: absolute; bottom: 30%; right: 26%;"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="#FFFFFF" opacity="0.7"></path></svg>
+<svg width="72" height="72" viewBox="0 0 128 128" aria-hidden="true"><defs><mask id="mk4"><rect width="128" height="128" fill="#fff"></rect><circle cx="82" cy="46" r="32" fill="#000"></circle></mask></defs><circle cx="62" cy="66" r="40" fill="#FFFFFF" mask="url(#mk4)"></circle></svg>
+<h2 style="margin: 0; font-size: clamp(30px, 4vw, 46px); line-height: 1.35; font-weight: 700;">今晚，換一部好久沒看的。</h2>
+<p style="margin: 0; max-width: 520px; font-size: 17px; line-height: 1.8; color: #D6E2FA;">把 WatchLaterHub 加到 Chrome，讓每個新分頁都變成一次小小的重逢。</p>
+<a href="#" style="margin-top: 8px; display: flex; align-items: center; gap: 10px; padding: 16px 30px; border-radius: 999px; background: #FFFFFF; color: #22325C; text-decoration: none; font-size: 17px; font-weight: 700;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+免費加到 Chrome
+</a>
+<span style="font-size: 13px; color: #B9CAEE;">[Chrome 線上應用程式商店連結]</span>
+</div>
+</section>
+
+<!-- 頁尾 -->
+<footer style="margin-top: auto; border-top: 1px solid #E1ECFA;">
+<div style="max-width: 1120px; margin: 0 auto; padding: 28px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; font-size: 14px; color: #55627D;">
+<span style="display: flex; align-items: center; gap: 8px;"><span style="font-family: Quicksand, sans-serif; font-weight: 700; color: #1B2745;">WatchLaterHub</span>© 2026</span>
+<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+<a href="#features" style="color: #55627D; text-decoration: none;">功能</a>
+<a href="#faq" style="color: #55627D; text-decoration: none;">常見問題</a>
+<a href="#" style="color: #55627D; text-decoration: none;">隱私權政策</a>
+<a href="#" style="color: #55627D; text-decoration: none;">GitHub</a>
+</div>
+</div>
+</footer>
+
+</div>
+</body>
+</html>
