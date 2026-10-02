@@ -6,6 +6,7 @@
 #   或下載這個檔案後：
 #     ./install-launcher.sh               安裝（下載已編譯好的小幫手，不需要 Rust）
 #     ./install-launcher.sh --from-source 從原始碼編譯安裝（需要 Rust 與旁邊的 launcher/ 資料夾）
+#     ./install-launcher.sh --check       檢查是否安裝成功（看哪一步有問題）
 #     ./install-launcher.sh --uninstall   移除
 #
 # 原理：Chrome 擴充功能不能直接開程式，要透過 Native Messaging 小程式代為開啟。
@@ -13,7 +14,7 @@
 set -euo pipefail
 
 HOST=com.watchlaterhub.launcher
-EXT_ID=lnokcijoconplpecgocjgkhhagkdmcce   # WatchLaterHub manifest.json 的 key 固定了這個 ID
+EXT_ID="${WLH_EXT_ID:-lnokcijoconplpecgocjgkhhagkdmcce}"   # WatchLaterHub manifest.json 的 key 固定了這個 ID
 REPO=101academyforyou/installLauncher
 BASE="${WLH_DOWNLOAD_BASE:-https://github.com/$REPO/releases/latest/download}"
 
@@ -21,9 +22,10 @@ MODE=install
 case "${1:-}" in
   --uninstall) MODE=uninstall ;;
   --from-source) MODE=source ;;
+  --check) MODE=check ;;
   "") ;;
-  -h|--help) sed -n '2,12p' "$0" 2>/dev/null || true; exit 0 ;;
-  *) echo "❌ 不認得的參數：$1（可用 --from-source、--uninstall）"; exit 1 ;;
+  -h|--help) sed -n '2,13p' "$0" 2>/dev/null || true; exit 0 ;;
+  *) echo "❌ 不認得的參數：$1（可用 --check、--from-source、--uninstall）"; exit 1 ;;
 esac
 
 case "$(uname -s)" in
@@ -60,6 +62,58 @@ if [ "$MODE" = uninstall ]; then
   rm -rf "$BIN_DIR"
   echo "✅ 已移除 WatchLaterHub 電腦小幫手"
   exit 0
+fi
+
+# ---------- 檢查 ----------
+check() {
+  local bad=0 found_ext=0 dir parent f out
+  echo ""
+  echo "🔍 檢查安裝狀態"
+  if [ -x "$BIN_DIR/launcher" ]; then
+    # Native Messaging 格式：4 位元組長度（17）+ JSON
+    out="$(printf '\021\000\000\000{"action":"ping"}' | "$BIN_DIR/launcher" 2>&1 | tail -c +5 || true)"
+    if printf '%s' "$out" | grep -q '"ok":true'; then
+      echo "✅ 小幫手可以執行：$BIN_DIR/launcher"
+    else
+      echo "❌ 小幫手無法執行：$out"; bad=1
+    fi
+  else
+    echo "❌ 找不到小幫手：$BIN_DIR/launcher"; bad=1
+  fi
+  for dir in "${MANIFEST_DIRS[@]}"; do
+    parent="$(dirname "$dir")"
+    [ -d "$parent" ] || continue
+    f="$dir/$HOST.json"
+    if [ -f "$f" ] && grep -q "$EXT_ID" "$f" && grep -q "\"$BIN_DIR/launcher\"" "$f"; then
+      echo "✅ 瀏覽器設定檔：$f"
+    else
+      echo "❌ 瀏覽器設定檔缺少或不正確：$f"; bad=1
+    fi
+    # 瀏覽器裡有沒有裝這個 ID 的 WatchLaterHub
+    if grep -lqs "$EXT_ID" "$parent"/*/Preferences "$parent"/*/"Secure Preferences" 2>/dev/null; then
+      found_ext=1
+    fi
+  done
+  if [ "$found_ext" = 1 ]; then
+    echo "✅ 瀏覽器裡有 WatchLaterHub（ID $EXT_ID）"
+  else
+    echo "⚠️  瀏覽器裡找不到 ID 為 $EXT_ID 的 WatchLaterHub。"
+    echo "   請到 chrome://extensions 確認 WatchLaterHub 的「ID」是 $EXT_ID。"
+    echo "   ID 不同的話（例如不是用 WatchLaterHub 的 extension 資料夾「載入未封裝項目」安裝），請用正確的 ID 重裝："
+    echo "   curl -fsSL https://raw.githubusercontent.com/$REPO/main/install-launcher.sh | WLH_EXT_ID=你的ID bash"
+  fi
+  echo ""
+  if [ "$bad" = 0 ]; then
+    echo "🎉 安裝正常。請「完全結束」瀏覽器（Mac 按 ⌘Q）後重新打開，到新分頁「開啟」按「重新偵測」。"
+  else
+    echo "❌ 安裝有問題，請重新執行安裝指令；仍失敗請把上面的訊息截圖回報。"
+  fi
+  return "$bad"
+}
+
+if [ "$MODE" = check ]; then
+  check
+  exit $?
 fi
 
 TMP="$(mktemp -d)"
@@ -127,7 +181,5 @@ JSON
   fi
 done
 
-echo ""
-echo "🎉 完成！回到新分頁，在「開啟」按「重新偵測」，就能加入電腦上的軟體。"
-echo "   （若仍偵測不到，請完全關閉瀏覽器再打開）"
 echo "   移除：再執行一次並加上 --uninstall"
+check || exit 1
