@@ -1,0 +1,17 @@
+[package]
+name = "watchlaterhub-launcher"
+version = "1.0.0"
+edition = "2021"
+description = "WatchLaterHub 電腦小幫手：讓新分頁可以開啟電腦上的軟體（Chrome Native Messaging host）"
+license = "MIT"
+
+# 獨立專案，不屬於外層的 wasm 套件
+[workspace]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"
+strip = true

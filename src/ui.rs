@@ -1,4 +1,4 @@
-//! 新分頁畫面：搜尋、隨機影片、登入、管理收藏、設定精靈
+//! 新分頁畫面：搜尋、隨機影片、登入、收藏、設定精靈
 
 use crate::chrome::{self, to_js};
 use crate::playlist;
@@ -28,19 +28,19 @@ fn set_logging_in(v: bool) {
 
 // ---------- DOM 小工具 ----------
 
-fn doc() -> Document {
+pub(crate) fn doc() -> Document {
     web_sys::window().unwrap().document().unwrap()
 }
-fn by_id<T: JsCast>(id: &str) -> T {
+pub(crate) fn by_id<T: JsCast>(id: &str) -> T {
     doc().get_element_by_id(id).unwrap_or_else(|| panic!("#{id} not found")).unchecked_into()
 }
-fn el(id: &str) -> HtmlElement {
+pub(crate) fn el(id: &str) -> HtmlElement {
     by_id(id)
 }
-fn text(id: &str, s: &str) {
+pub(crate) fn text(id: &str, s: &str) {
     el(id).set_text_content(Some(s));
 }
-fn hide(id: &str, hidden: bool) {
+pub(crate) fn hide(id: &str, hidden: bool) {
     el(id).set_hidden(hidden);
 }
 fn all(sel: &str) -> Vec<HtmlElement> {
@@ -50,15 +50,15 @@ fn all(sel: &str) -> Vec<HtmlElement> {
 fn dialog(id: &str) -> HtmlDialogElement {
     by_id(id)
 }
-fn spawn(f: impl Future<Output = ()> + 'static) {
+pub(crate) fn spawn(f: impl Future<Output = ()> + 'static) {
     wasm_bindgen_futures::spawn_local(f);
 }
-fn listen(target: &web_sys::EventTarget, ev: &str, f: impl FnMut(Event) + 'static) {
+pub(crate) fn listen(target: &web_sys::EventTarget, ev: &str, f: impl FnMut(Event) + 'static) {
     let cb = Closure::<dyn FnMut(Event)>::new(f);
     target.add_event_listener_with_callback(ev, cb.as_ref().unchecked_ref()).unwrap();
     cb.forget();
 }
-fn on_click(id: &str, f: impl Fn() + 'static) {
+pub(crate) fn on_click(id: &str, f: impl Fn() + 'static) {
     listen(&el(id), "click", move |_| f());
 }
 fn confirm(msg: &str) -> bool {
@@ -66,6 +66,66 @@ fn confirm(msg: &str) -> bool {
 }
 fn input_value(id: &str) -> String {
     by_id::<HtmlInputElement>(id).value()
+}
+
+// ---------- 收藏、TODO、書籤、最近：一次只開一個 ----------
+
+/// 打開 `keep` 之前先關掉其他的（"fav"、"todo"、"bm"、"recent"）
+pub(crate) fn close_panels_except(keep: &str) {
+    if keep != "fav" && dialog("manage").open() {
+        dialog("manage").close();
+    }
+    if keep != "todo" {
+        crate::todo::close();
+    }
+    if keep != "bm" {
+        crate::bookmarks::close();
+    }
+    if keep != "recent" {
+        crate::recent::close();
+    }
+    if keep != "apps" {
+        crate::apps::close();
+    }
+}
+
+/// 讓使用者下載一個文字檔
+pub(crate) fn download_text(filename: &str, content: &str, mime: &str) {
+    let parts = js_sys::Array::of1(&JsValue::from_str(content));
+    let opts = web_sys::BlobPropertyBag::new();
+    opts.set_type(mime);
+    let Ok(blob) = web_sys::Blob::new_with_str_sequence_and_options(&parts, &opts) else { return };
+    let Ok(url) = web_sys::Url::create_object_url_with_blob(&blob) else { return };
+    let a: HtmlAnchorElement = doc().create_element("a").unwrap().unchecked_into();
+    a.set_href(&url);
+    a.set_download(filename);
+    a.click();
+    timeout(1000, move || {
+        let _ = web_sys::Url::revoke_object_url(&url);
+    });
+}
+
+// ---------- 清單裡的搜尋框（TODO、書籤、最近共用） ----------
+
+/// 搜尋框目前的文字
+pub(crate) fn search_text(id: &str) -> String {
+    by_id::<HtmlInputElement>(id).value().trim().to_string()
+}
+
+/// 打字就篩選；有文字時按 Esc 先清空（不會順便關掉清單）
+pub(crate) fn search_box(id: &'static str, on_change: impl Fn() + 'static) {
+    let on_change = std::rc::Rc::new(on_change);
+    let f = on_change.clone();
+    listen(&el(id), "input", move |_| f());
+    listen(&el(id), "keydown", move |e| {
+        let k: &KeyboardEvent = e.unchecked_ref();
+        if k.key() == "Escape" && !by_id::<HtmlInputElement>(id).value().is_empty() {
+            e.stop_propagation();
+            e.prevent_default();
+            by_id::<HtmlInputElement>(id).set_value("");
+            on_change();
+        }
+    });
 }
 
 // ---------- 搜尋 ----------
@@ -96,9 +156,6 @@ async fn render() {
     let s = youtube::settings().await;
     let can_login = !s.connected; // 未登入時一律顯示 Continue with Google
 
-    for b in all(".topbar .js-login") {
-        b.set_hidden(!can_login || list.is_empty());
-    }
     hide("avatar", !s.connected || s.channel.is_none());
     if let Some(ch) = &s.channel {
         if let Some(img) = el("avatar").query_selector("img").ok().flatten() {
@@ -109,6 +166,9 @@ async fn render() {
     text("count", &if list.is_empty() { String::new() } else { format!("({})", list.len()) });
 
     hide("video", list.is_empty());
+    if list.is_empty() {
+        crate::bookmarks::set_current(None);
+    }
     hide("empty", !list.is_empty());
     if !list.is_empty() {
         return show_random(Some(list)).await;
@@ -118,7 +178,7 @@ async fn render() {
     let (title, desc) = if logging_in() || (s.connected && s.synced_at == 0.0) {
         ("正在載入你的 YouTube 收藏…", "第一次同步可能需要幾秒鐘")
     } else if s.connected {
-        ("你的清單裡還沒有影片", "去 YouTube 按讚幾部影片，或在「管理收藏」勾選其他播放清單。")
+        ("你的清單裡還沒有影片", "去 YouTube 按讚幾部影片，或在「收藏」勾選其他播放清單。")
     } else {
         ("每開一個分頁，重溫一部你收藏的影片", "用 Google 帳號登入，自動載入你在 YouTube 按讚的影片與播放清單。")
     };
@@ -137,6 +197,7 @@ async fn show_random(list: Option<Vec<Video>>) {
     };
     chrome::set(&[("lastId", to_js(&v.id))]).await;
 
+    crate::bookmarks::set_current(Some(v.clone()));
     by_id::<HtmlImageElement>("v-img").set_src(&v.thumb("hqdefault"));
     by_id::<HtmlAnchorElement>("v-link").set_href(&v.watch_url());
     by_id::<HtmlAnchorElement>("v-title").set_href(&v.watch_url());
@@ -166,7 +227,15 @@ async fn login() {
     set_login_buttons_disabled(true);
     render().await;
 
-    if let Err(e) = youtube::connect().await {
+    let res = youtube::connect().await;
+    if res.is_ok() && !dialog("manage").open() {
+        // 登入成功：打開「我的收藏」讓使用者勾選要同步的播放清單
+        close_panels_except("fav");
+        text("msg", "");
+        let _ = dialog("manage").show_modal();
+        spawn(render_list());
+    }
+    if let Err(e) = res {
         chrome::warn(&format!("WatchLaterHub login failed: {e}"));
         let low = e.to_lowercase();
         let msg = if e == CANCELLED || low.contains("cancel") || low.contains("did not approve") || low.contains("user closed") {
@@ -217,32 +286,81 @@ fn open_setup() {
     let _ = el("client-id").focus();
 }
 
-// ---------- 管理收藏 ----------
+// ---------- 收藏 ----------
 
 async fn render_list() {
-    let list = store::get_manual().await;
+    let manual = store::get_manual().await;
+    let synced = store::get_synced().await;
     let ul = el("list");
     ul.set_inner_html("");
-    if list.is_empty() {
-        ul.set_inner_html(r#"<li class="none">沒有手動加入的影片</li>"#);
+    let q = search_text("fav-search");
+    // 手動加入（最新在上），再來是從 YouTube 同步的（和手動重複的不再列）
+    let mut entries: Vec<(&crate::videos::Video, bool)> = manual.iter().rev().map(|v| (v, false)).collect();
+    entries.extend(synced.iter().filter(|v| !manual.iter().any(|m| m.id == v.id)).map(|v| (v, true)));
+    let total = entries.len();
+    if total == 0 {
+        text("fav-count", "");
+        ul.set_inner_html(r#"<li class="none">還沒有影片</li>"#);
         return;
     }
-    for v in list.iter().rev() {
+    let shown: Vec<(&crate::videos::Video, bool)> =
+        entries.into_iter().filter(|(v, _)| crate::videos::matches(&q, &[&v.title, &v.author])).collect();
+    text("fav-count", &if q.is_empty() { format!("{total} 部") } else { format!("{} / {total} 部", shown.len()) });
+    if shown.is_empty() {
+        ul.set_inner_html(r#"<li class="none">找不到符合的影片</li>"#);
+        return;
+    }
+    for (v, is_synced) in shown {
         let li: Element = doc().create_element("li").unwrap();
-        li.set_inner_html(r#"<img alt=""><a target="_blank" rel="noopener"></a><button class="x" title="移除">✕</button>"#);
+        li.set_inner_html(r#"<img alt="" draggable="false"><a target="_blank" rel="noopener" draggable="false"></a><button class="x" title="移除">✕</button>"#);
+        if is_synced {
+            // 同步來的影片：標示來源，不能拖曳排序
+            let _ = li.class_list().add_1("synced");
+            let tag = doc().create_element("span").unwrap();
+            tag.set_class_name("sync-tag");
+            tag.set_text_content(Some("YouTube 同步"));
+            li.insert_before(&tag, li.query_selector("button").unwrap().as_ref().map(|b| b.unchecked_ref::<web_sys::Node>())).unwrap();
+        } else {
+            li.prepend_with_node_1(&crate::drag::grip()).unwrap();
+            // 畫面是「最新在上」（存的順序反過來），所以放到「下面」= 存的順序裡的「前面」
+            crate::drag::sortable(
+                crate::drag::Sortable {
+                    item: li.clone(),
+                    handle: Some(li.clone()),
+                    zone: li.clone(),
+                    group: "fav",
+                    id: v.id.clone(),
+                    can_contain: false,
+                },
+                std::rc::Rc::new(|from, to, pos| {
+                    spawn(async move {
+                        store::reorder(&from, &to, pos == crate::drag::Pos::Before).await;
+                        render_list().await;
+                    });
+                }),
+            );
+        }
         let img: HtmlImageElement = li.query_selector("img").unwrap().unwrap().unchecked_into();
         img.set_src(&v.thumb("default"));
         let a: HtmlAnchorElement = li.query_selector("a").unwrap().unwrap().unchecked_into();
         a.set_href(&v.watch_url());
         a.set_text_content(Some(&v.title));
         let btn = li.query_selector("button").unwrap().unwrap();
+        if is_synced {
+            let _ = btn.set_attribute("title", "從清單移除（之後同步也不會再加入）");
+        }
         let id = v.id.clone();
         listen(&btn, "click", move |_| {
             let id = id.clone();
             spawn(async move {
-                store::remove(&id).await;
+                if is_synced {
+                    store::hide_synced(&id).await;
+                } else {
+                    store::remove(&id).await;
+                }
                 render_list().await;
                 render().await;
+                yt_status().await;
             });
         });
         ul.append_child(&li).unwrap();
@@ -254,6 +372,8 @@ async fn yt_status() {
     let n = store::get_synced().await.len();
     let msg = if !s.error.is_empty() {
         format!("⚠ {}", s.error)
+    } else if s.sources.is_empty() {
+        "勾選要同步的播放清單，會立即同步載入".into()
     } else if s.synced_at > 0.0 {
         format!("已同步 {n} 部 · {}", ago((chrome::now() - s.synced_at) / 60_000.0))
     } else {
@@ -298,9 +418,58 @@ async fn render_yt(refresh_sources: bool) {
                 .into_iter()
                 .map(|c| c.unchecked_into::<HtmlInputElement>().value())
                 .collect();
-            spawn(async move { youtube::set_sources(&ids).await });
+            spawn(async move {
+                youtube::set_sources(&ids).await;
+                resync_soon();
+            });
         });
         box_.append_child(&label).unwrap();
+    }
+}
+
+thread_local! {
+    /// 勾選變動後的同步：(第幾次變動, 是否同步中, 同步中又有變動)
+    static RESYNC: std::cell::Cell<(u32, bool, bool)> = const { std::cell::Cell::new((0, false, false)) };
+}
+
+/// 勾選停下 0.8 秒後同步；同步中又改了勾選，結束後再同步一次
+fn resync_soon() {
+    let n = RESYNC.with(|r| {
+        let (n, running, again) = r.get();
+        r.set((n + 1, running, again));
+        n + 1
+    });
+    timeout(800, move || {
+        if RESYNC.with(|r| r.get().0) != n {
+            return; // 之後還有變動，交給最後一次
+        }
+        spawn(run_resync());
+    });
+}
+
+async fn run_resync() {
+    let busy = RESYNC.with(|r| {
+        let (n, running, _) = r.get();
+        r.set((n, true, running));
+        running
+    });
+    if busy {
+        return;
+    }
+    loop {
+        text("yt-status", "同步中…");
+        let _ = youtube::sync().await;
+        yt_status().await;
+        render().await;
+        render_list().await;
+        let again = RESYNC.with(|r| {
+            let (n, _, again) = r.get();
+            r.set((n, again, false));
+            again
+        });
+        if !again {
+            break;
+        }
     }
 }
 
@@ -350,6 +519,12 @@ pub fn start() {
     // AI 模式：有文字就直接問，空白就打開 AI 模式首頁
     on_click("ai", || go(&[("udm", "50")], Some("https://www.google.com/search?udm=50")));
 
+    // 右側書籤
+    crate::bookmarks::start();
+    crate::todo::start();
+    crate::recent::start();
+    crate::apps::start();
+
     // 影片
     on_click("shuffle", || spawn(show_random(None)));
 
@@ -366,7 +541,7 @@ pub fn start() {
         spawn(async {
             chrome::clipboard_write(&el("redirect-uri").text_content().unwrap_or_default()).await;
             text("copy-uri", "已複製 ✓");
-            gloo_timeout(1500, || text("copy-uri", "複製"));
+            timeout(1500, || text("copy-uri", "複製"));
         })
     });
     on_click("save-setup", || {
@@ -386,8 +561,9 @@ pub fn start() {
         }
     });
 
-    // 管理收藏
+    // 收藏
     on_click("open-manage", || {
+        close_panels_except("fav");
         text("msg", "");
         let _ = dialog("manage").show_modal();
         spawn(async {
@@ -396,6 +572,10 @@ pub fn start() {
         });
     });
     on_click("close-manage", || dialog("manage").close());
+    search_box("fav-search", || spawn(render_list()));
+    // 「我的收藏」旁的 YouTube 按鈕（圖示是 Chrome 提供的 YouTube 網站圖示）
+    by_id::<HtmlImageElement>("yt-icon").set_src(&chrome::favicon_url("https://www.youtube.com/"));
+    on_click("open-yt", || spawn(async { chrome::open_in_new_tab("https://www.youtube.com/", true).await }));
     listen(&el("manage"), "click", |e| {
         let is_backdrop = e.target().map(|t| t == el("manage").into()).unwrap_or(false);
         if is_backdrop {
@@ -449,6 +629,7 @@ pub fn start() {
             btn.set_disabled(false);
             yt_status().await;
             render().await;
+            render_list().await;
         })
     });
     on_click("yt-disconnect", || {
@@ -478,15 +659,10 @@ pub fn start() {
     spawn(async {
         store::seed_defaults().await;
         render().await;
-        // 保險：超過一天沒同步（例如電腦睡眠錯過排程），開新分頁時在背景補同步
-        let s = youtube::settings().await;
-        if s.connected && chrome::now() - s.synced_at > 24.0 * 3600e3 {
-            let _ = youtube::sync().await;
-        }
     });
 }
 
-fn gloo_timeout(ms: i32, f: impl FnOnce() + 'static) {
+pub(crate) fn timeout(ms: i32, f: impl FnOnce() + 'static) {
     let cb = Closure::once_into_js(f);
     let _ = web_sys::window().unwrap().set_timeout_with_callback_and_timeout_and_arguments_0(cb.unchecked_ref(), ms);
 }

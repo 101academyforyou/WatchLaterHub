@@ -26,6 +26,46 @@ impl Video {
     }
 }
 
+/// 搜尋篩選：查詢字串以空白分成多個詞，每個詞都要出現在任一欄位裡（不分大小寫）；空白查詢一律符合
+pub fn matches(query: &str, fields: &[&str]) -> bool {
+    let hay: Vec<String> = fields.iter().map(|f| f.to_lowercase()).collect();
+    query.to_lowercase().split_whitespace().all(|w| hay.iter().any(|h| h.contains(w)))
+}
+
+/// 拖曳排序：把 `from` 移到 `to` 的前面（`after` 為 true 時是後面）。找不到就不動，回傳是否有移動
+pub fn move_by_key<T>(list: &mut Vec<T>, key: impl Fn(&T) -> &str, from: &str, to: &str, after: bool) -> bool {
+    if from == to {
+        return false;
+    }
+    let Some(i) = list.iter().position(|x| key(x) == from) else { return false };
+    if !list.iter().any(|x| key(x) == to) {
+        return false;
+    }
+    let item = list.remove(i);
+    let j = list.iter().position(|x| key(x) == to).unwrap();
+    list.insert(if after { j + 1 } else { j }, item);
+    true
+}
+
+/// 使用者輸入的書籤網址：去掉空白，沒寫通訊協定就補 https://；不像網址則回傳 None
+pub fn normalize_url(input: &str) -> Option<String> {
+    let s = input.trim();
+    if s.is_empty() || s.contains(char::is_whitespace) {
+        return None;
+    }
+    let has_scheme = s.split_once(':').is_some_and(|(sch, rest)| {
+        !sch.is_empty()
+            && sch.chars().all(|c| c.is_ascii_alphanumeric() || "+-.".contains(c))
+            && (rest.starts_with("//") || ["javascript", "about", "mailto", "data", "chrome"].contains(&sch.to_ascii_lowercase().as_str()))
+    });
+    let full = if has_scheme { s.to_string() } else { format!("https://{s}") };
+    let u = Url::parse(&full).ok()?;
+    if !has_scheme && !u.host_str().is_some_and(|h| h.contains('.') || h == "localhost") {
+        return None;
+    }
+    Some(full)
+}
+
 fn is_video_id(s: &str) -> bool {
     s.len() == 11 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
 }
@@ -214,5 +254,44 @@ mod tests {
         assert_eq!(v.added_at, Some(1.0));
         let v: Video = serde_json::from_str(r#"{"id":"x","title":"t"}"#).unwrap();
         assert_eq!(v.author, "");
+    }
+
+    #[test]
+    fn normalize_urls() {
+        assert_eq!(normalize_url(" youtube.com/watch?v=1 ").as_deref(), Some("https://youtube.com/watch?v=1"));
+        assert_eq!(normalize_url("http://a.b/c").as_deref(), Some("http://a.b/c"));
+        assert_eq!(normalize_url("chrome://settings").as_deref(), Some("chrome://settings"));
+        assert_eq!(normalize_url("localhost:3000").as_deref(), Some("https://localhost:3000"));
+        assert_eq!(normalize_url("javascript:alert(1)").as_deref(), Some("javascript:alert(1)"));
+        assert_eq!(normalize_url(""), None);
+        assert_eq!(normalize_url("hello world"), None);
+        assert_eq!(normalize_url("hello"), None);
+    }
+
+    #[test]
+    fn move_items() {
+        let ids = |v: &Vec<&str>| v.join("");
+        let mut v = vec!["a", "b", "c", "d"];
+        assert!(move_by_key(&mut v, |x| x, "a", "c", true));
+        assert_eq!(ids(&v), "bcad");
+        assert!(move_by_key(&mut v, |x| x, "d", "b", false));
+        assert_eq!(ids(&v), "dbca");
+        assert!(move_by_key(&mut v, |x| x, "b", "a", true));
+        assert_eq!(ids(&v), "dcab");
+        assert!(!move_by_key(&mut v, |x| x, "b", "b", true));
+        assert!(!move_by_key(&mut v, |x| x, "z", "b", true));
+        assert!(!move_by_key(&mut v, |x| x, "b", "z", true));
+        assert_eq!(ids(&v), "dcab");
+    }
+
+    #[test]
+    fn search_matches() {
+        assert!(matches("", &["anything"]));
+        assert!(matches("  ", &[]));
+        assert!(matches("github", &["My Repo", "https://GitHub.com/ric2k1"]));
+        assert!(matches("論文 第三章", &["寫論文第三章"]));
+        assert!(matches("repo ric2k1", &["My Repo", "https://github.com/ric2k1"]));
+        assert!(!matches("論文 email", &["寫論文第三章"]));
+        assert!(!matches("x", &[]));
     }
 }

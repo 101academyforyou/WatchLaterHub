@@ -1,6 +1,6 @@
 [package]
 name = "watchlaterhub"
-version = "4.0.0"
+version = "4.1.0"
 edition = "2021"
 description = "WatchLaterHub: a Chrome new-tab page that shows a random video from your YouTube favorites, with Google search"
 license = "MIT"
@@ -22,7 +22,8 @@ features = [
   "Window", "Document", "Location", "Element", "HtmlElement", "Node", "NodeList",
   "HtmlInputElement", "HtmlTextAreaElement", "HtmlButtonElement", "HtmlDialogElement",
   "HtmlImageElement", "HtmlAnchorElement", "CssStyleDeclaration",
-  "Event", "EventTarget", "KeyboardEvent", "Response",
+  "Event", "EventTarget", "KeyboardEvent", "Response", "DomTokenList", "HtmlSelectElement", "HtmlOptionElement", "MouseEvent", "DragEvent", "DataTransfer", "DomRect", "History", "AudioContext", "BaseAudioContext", "AudioNode", "AudioParam", "AudioDestinationNode", "OscillatorNode", "AudioScheduledSourceNode", "GainNode", "UrlSearchParams", "Blob", "BlobPropertyBag", "Url", "HtmlCollection",
+  "HtmlCanvasElement", "CanvasRenderingContext2d", "ImageData",
 ]
 
 [profile.release]

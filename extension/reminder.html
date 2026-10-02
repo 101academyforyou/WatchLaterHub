@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>⏰ TODO 提醒</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png">
+  <link rel="stylesheet" href="newtab.css">
+  <link rel="stylesheet" href="reminder.css">
+</head>
+<body class="reminder">
+  <div class="r-head"><span class="r-bell" aria-hidden="true">⏰</span> <span id="r-kind">TODO 提醒</span></div>
+  <div id="r-timer" hidden>
+    <div id="r-timer-text" class="r-text"></div>
+    <div class="r-later">
+      <span>再計時：</span>
+      <button id="r-again-1" class="chip" type="button">1 分鐘</button>
+      <button id="r-again-5" class="chip" type="button">5 分鐘</button>
+      <button id="r-again-10" class="chip" type="button">10 分鐘</button>
+      <button id="r-again-25" class="chip" type="button">25 分鐘</button>
+    </div>
+  </div>
+  <div id="r-main" hidden>
+    <div id="r-text" class="r-text"></div>
+    <div id="r-when" class="r-when"></div>
+    <button id="r-done" class="btn primary r-done" type="button">✓ 完成</button>
+    <div class="r-later">
+      <span>稍後再提醒：</span>
+      <button id="r-later-5" class="chip" type="button">5 分鐘</button>
+      <button id="r-later-10" class="chip" type="button">10 分鐘</button>
+      <button id="r-later-30" class="chip" type="button">30 分鐘</button>
+      <button id="r-later-60" class="chip" type="button">1 小時</button>
+    </div>
+  </div>
+  <div id="r-gone" class="r-gone" hidden>這個待辦事項已經完成或被刪除了。</div>
+  <div class="r-foot">
+    <button id="r-open" class="btn" type="button">打開 TODO 清單</button>
+    <button id="r-ok" class="btn" type="button">知道了</button>
+  </div>
+  <script type="module" src="reminder.js"></script>
+</body>
+</html>

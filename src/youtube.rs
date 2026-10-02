@@ -80,19 +80,27 @@ pub async fn set_client_id(id: &str) -> R<()> {
 
 /// interactive=true：顯示 Google 帳號選擇畫面；false：背景靜默換新 token（不跳視窗）
 async fn get_token(interactive: bool) -> R<String> {
-    if let Some(t) = chrome::get::<Token>("ytToken").await {
-        if t.exp - 60_000.0 > chrome::now() {
-            return Ok(t.token);
+    oauth_token(SCOPES, "ytToken", "ytEmail", interactive).await
+}
+
+/// 取得指定權限範圍的 access token
+/// `token_key`／`email_key`：token 與帳號 email 存在 chrome.storage 的鍵名
+pub async fn oauth_token(scopes: &str, token_key: &str, email_key: &str, interactive: bool) -> R<String> {
+    if !interactive {
+        if let Some(t) = chrome::get::<Token>(token_key).await {
+            if t.exp - 60_000.0 > chrome::now() {
+                return Ok(t.token);
+            }
         }
     }
     let cid = client_id().await.ok_or("尚未設定 Client ID")?;
-    let email: String = chrome::get_or("ytEmail", String::new()).await;
+    let email: String = chrome::get_or(email_key, String::new()).await;
     let redirect = chrome::redirect_url();
     let mut params = vec![
         ("client_id", cid.as_str()),
         ("response_type", "token"),
         ("redirect_uri", redirect.as_str()),
-        ("scope", SCOPES),
+        ("scope", scopes),
         ("include_granted_scopes", "true"),
         ("prompt", if interactive { "select_account" } else { "none" }),
     ];
@@ -117,7 +125,7 @@ async fn get_token(interactive: bool) -> R<String> {
     let token = field("access_token").ok_or("登入沒有取得 access token")?;
     let secs: f64 = field("expires_in").and_then(|s| s.parse().ok()).unwrap_or(3600.0);
     let t = Token { token: token.clone(), exp: chrome::now() + secs * 1000.0 };
-    chrome::set(&[("ytToken", to_js(&t))]).await;
+    chrome::set(&[(token_key, to_js(&t))]).await;
     Ok(token)
 }
 
@@ -208,8 +216,8 @@ async fn fetch_source(id: &str) -> R<Vec<Video>> {
     }
 }
 
-/// 一鍵登入：選帳號授權 → 取得頻道資訊與清單 → 預設全選 → 同步
-pub async fn connect() -> R<usize> {
+/// 一鍵登入：選帳號授權 → 取得頻道資訊與清單；要同步哪些清單由使用者勾選（預設都不勾）
+pub async fn connect() -> R<()> {
     chrome::remove(&["ytToken"]).await;
     get_token(true).await?;
     let me = api(USERINFO, "userinfo", &[], false).await?;
@@ -221,16 +229,20 @@ pub async fn connect() -> R<usize> {
         thumb: ch["items"][0]["snippet"]["thumbnails"]["default"]["url"].as_str().map(String::from),
     });
     let srcs = list_sources().await?;
-    let ids: Vec<&str> = srcs.iter().map(|s| s.id.as_str()).collect();
+    let ids: Vec<&str> = vec![];
+    let empty: Vec<Video> = vec![];
     chrome::set(&[
         ("ytConnected", to_js(&true)),
         ("ytChannel", to_js(&channel)),
         ("ytSourceList", to_js(&srcs)),
         ("ytSources", to_js(&ids)),
+        (YT_KEY, to_js(&empty)),
+        ("ytSyncedAt", to_js(&0)),
+        ("ytError", to_js("")),
         ("ytSyncStart", to_js(&0)),
     ])
     .await;
-    sync().await
+    Ok(())
 }
 
 /// 同步所有勾選的來源到本機快取，回傳影片數
