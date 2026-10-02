@@ -100,20 +100,23 @@ extension/
 
 Chrome 擴充功能基於安全不能直接開啟程式，所以要裝一個小幫手（Chrome Native Messaging host，原始碼在 `launcher/`）。
 
-**Mac（給一般使用者）**：沒裝小幫手時，「開啟」面板會出現「下載小幫手」按鈕，下載 `WatchLaterHub-Launcher.pkg` 雙擊安裝，
-裝好按「重新偵測」即可（不需要 Rust 或終端機）。安裝檔由另一個 repo
-[installLauncher](https://github.com/101academyforyou/installLauncher) 產生與發佈（含簽署、公證設定與移除方式）。
+沒裝小幫手時，「開啟」面板會顯示安裝指令（可一鍵複製），打開「終端機」貼上執行即可，不需要 Rust：
 
-**開發者／Linux**：在專案資料夾執行一次：
+```bash
+curl -fsSL https://raw.githubusercontent.com/101academyforyou/installLauncher/main/install-launcher.sh | bash
+```
+
+指令會執行 [installLauncher](https://github.com/101academyforyou/installLauncher) 的 `install-launcher.sh`，下載已編譯好的小幫手
+（macOS 通用版、Linux x86_64）。也可以在這個專案資料夾直接執行（下載失敗時會用 `launcher/` 原始碼編譯）：
 
 ```bash
 ./install-launcher.sh
 ```
 
-會編譯 `launcher/`、把程式放到 `~/Library/Application Support/WatchLaterHub/`（macOS），並在 Chrome 的
-`NativeMessagingHosts` 資料夾寫入 `com.watchlaterhub.launcher.json`（只允許 WatchLaterHub 的擴充功能 ID 呼叫）。
+會把小幫手放到 `~/Library/Application Support/WatchLaterHub/`（macOS）或 `~/.local/share/watchlaterhub/`（Linux），並在
+Chrome、Edge、Brave 等瀏覽器的 `NativeMessagingHosts` 資料夾寫入 `com.watchlaterhub.launcher.json`（只允許 WatchLaterHub 的擴充功能 ID 呼叫）。
 小幫手只會列出與開啟電腦上已安裝的軟體（macOS 掃描 /Applications 等），不會執行其他指令。
-移除：刪除上述兩個位置的檔案即可。支援 macOS 與 Linux。
+移除：`./install-launcher.sh --uninstall`。`./install-launcher.sh --from-source` 可強制從原始碼編譯（需要 Rust）。
 
 `GOOGLE_CLIENT_ID` 設成空字串時，使用者第一次按 Continue with Google 會看到設定精靈，可以直接貼上。
 

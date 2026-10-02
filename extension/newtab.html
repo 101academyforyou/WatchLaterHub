@@ -175,9 +175,13 @@
     <div id="apps-add" class="apps-add" hidden>
       <div id="apps-helper-off" class="apps-helper-off" hidden>
         <div id="apps-helper-msg" class="ah-msg">要開啟電腦上的其他軟體，請先安裝「電腦小幫手」（只需一次）</div>
+        <div id="apps-helper-cmd-box" class="ah-cmd-box">
+          <code id="apps-helper-cmd" class="ah-cmd"></code>
+        </div>
         <div class="ah-actions">
-          <a id="apps-helper-dl" class="btn primary" href="#" target="_blank" rel="noopener">下載小幫手</a>
+          <button id="apps-helper-copy" class="btn primary" type="button">複製指令</button>
           <button id="apps-helper-recheck" class="btn" type="button">重新偵測</button>
+          <a id="apps-helper-help" class="ah-help" href="#" target="_blank" rel="noopener">安裝說明</a>
         </div>
         <div id="apps-helper-steps" class="ah-steps"></div>
       </div>

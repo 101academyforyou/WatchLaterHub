@@ -1,6 +1,6 @@
 [package]
 name = "watchlaterhub-launcher"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "WatchLaterHub 電腦小幫手：讓新分頁可以開啟電腦上的軟體（Chrome Native Messaging host）"
 license = "MIT"

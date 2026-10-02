@@ -526,35 +526,31 @@ mod view {
         });
     }
 
-    /// 沒裝小幫手：依作業系統顯示下載按鈕或安裝說明
+    /// 沒裝小幫手：Mac／Linux 顯示安裝指令（打開終端機貼上執行 install-launcher.sh）
     async fn show_helper_missing() {
         let os = match platform_info_raw().await {
             Ok(v) => js_sys::Reflect::get(&v, &"os".into()).ok().and_then(|x| x.as_string()).unwrap_or_default(),
             Err(_) => String::new(),
         };
-        let dl: web_sys::HtmlAnchorElement = el("apps-helper-dl").unchecked_into();
-        let (msg, steps, href, label, show_dl) = match os.as_str() {
+        let supported = os == "mac" || os == "linux";
+        let (msg, steps) = match os.as_str() {
             "mac" => (
-                "要開啟電腦上的其他軟體，請先安裝「電腦小幫手」（只需一次）",
-                "下載後雙擊 WatchLaterHub-Launcher.pkg 照指示安裝，裝好回來按「重新偵測」。若出現「無法驗證開發者」，到「系統設定 → 隱私權與安全性」按「強制打開」。",
-                crate::config::LAUNCHER_PKG_URL,
-                "下載小幫手",
-                true,
+                "要開啟電腦上的其他軟體，請先安裝「電腦小幫手」（只需一次）：打開「終端機」，貼上這行指令後按 Enter",
+                "裝好後回來按「重新偵測」。（終端機在「應用程式 → 工具程式」，或按 ⌘ 空白鍵搜尋「終端機」）",
             ),
             "linux" => (
-                "要開啟電腦上的其他軟體，請先安裝「電腦小幫手」（只需一次）",
-                "在專案資料夾執行 ./install-launcher.sh，裝好回來按「重新偵測」。",
-                crate::config::LAUNCHER_HELP_URL,
-                "安裝說明",
-                true,
+                "要開啟電腦上的其他軟體，請先安裝「電腦小幫手」（只需一次）：打開終端機，貼上這行指令後按 Enter",
+                "裝好後回來按「重新偵測」。",
             ),
-            _ => ("電腦小幫手目前只支援 Mac 與 Linux；仍可用下方的快速加入或網址開啟軟體。", "", "#", "", false),
+            _ => ("電腦小幫手目前只支援 Mac 與 Linux；仍可用下方的快速加入或網址開啟軟體。", ""),
         };
         text_of("apps-helper-msg", msg);
         text_of("apps-helper-steps", steps);
-        dl.set_href(href);
-        dl.set_text_content(Some(label));
-        dl.set_hidden(!show_dl);
+        text_of("apps-helper-cmd", crate::config::LAUNCHER_INSTALL_CMD);
+        el("apps-helper-help").unchecked_into::<web_sys::HtmlAnchorElement>().set_href(crate::config::LAUNCHER_HELP_URL);
+        for id in ["apps-helper-cmd-box", "apps-helper-copy", "apps-helper-help"] {
+            hide(id, !supported);
+        }
         hide("apps-helper-off", false);
     }
 
@@ -637,6 +633,14 @@ mod view {
             hide("apps-add", !show);
         });
         on_click("apps-url-add", add_url_from_inputs);
+        on_click("apps-helper-copy", || {
+            spawn(async {
+                chrome::clipboard_write(crate::config::LAUNCHER_INSTALL_CMD).await;
+                let b = el("apps-helper-copy");
+                b.set_text_content(Some("已複製 ✓"));
+                crate::ui::timeout(1500, move || b.set_text_content(Some("複製指令")));
+            })
+        });
         on_click("apps-helper-recheck", || {
             spawn(async {
                 text_of("apps-helper-steps", "偵測中…");

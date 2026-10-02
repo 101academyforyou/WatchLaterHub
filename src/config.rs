@@ -24,8 +24,8 @@ pub const DEFAULT_VIDEOS: &[(&str, &str, &str)] = &[
 /// 每個來源（喜歡的影片／播放清單）最多同步幾部
 pub const MAX_PER_SOURCE: usize = 1000;
 
-/// 「開啟」的電腦小幫手 Mac 安裝檔（由 installLauncher repo 的 GitHub Actions 產生，固定下載最新版）
-pub const LAUNCHER_PKG_URL: &str =
-    "https://github.com/101academyforyou/installLauncher/releases/latest/download/WatchLaterHub-Launcher.pkg";
-/// Linux 的安裝說明（installLauncher repo 的 install-launcher.sh）
-pub const LAUNCHER_HELP_URL: &str = "https://github.com/101academyforyou/installLauncher#linux";
+/// 「開啟」的電腦小幫手安裝指令（installLauncher repo 的 install-launcher.sh，會下載已編譯好的小幫手）
+pub const LAUNCHER_INSTALL_CMD: &str =
+    "curl -fsSL https://raw.githubusercontent.com/101academyforyou/installLauncher/main/install-launcher.sh | bash";
+/// 安裝說明
+pub const LAUNCHER_HELP_URL: &str = "https://github.com/101academyforyou/installLauncher";
