@@ -25,7 +25,7 @@ case "${1:-}" in
   --check) MODE=check ;;
   "") ;;
   -h|--help) sed -n '2,13p' "$0" 2>/dev/null || true; exit 0 ;;
-  *) echo "❌ 不認得的參數：$1（可用 --check、--from-source、--uninstall）"; exit 1 ;;
+  *) echo "❌ 不認得的參數：${1}（可用 --check、--from-source、--uninstall）"; exit 1 ;;
 esac
 
 case "$(uname -s)" in
@@ -95,10 +95,10 @@ check() {
     fi
   done
   if [ "$found_ext" = 1 ]; then
-    echo "✅ 瀏覽器裡有 WatchLaterHub（ID $EXT_ID）"
+    echo "✅ 瀏覽器裡有 WatchLaterHub（ID ${EXT_ID}）"
   else
     echo "⚠️  瀏覽器裡找不到 ID 為 $EXT_ID 的 WatchLaterHub。"
-    echo "   請到 chrome://extensions 確認 WatchLaterHub 的「ID」是 $EXT_ID。"
+    echo "   請到 chrome://extensions 確認 WatchLaterHub 的「ID」是 ${EXT_ID}。"
     echo "   ID 不同的話（例如不是用 WatchLaterHub 的 extension 資料夾「載入未封裝項目」安裝），請用正確的 ID 重裝："
     echo "   curl -fsSL https://raw.githubusercontent.com/$REPO/main/install-launcher.sh | WLH_EXT_ID=你的ID bash"
   fi
