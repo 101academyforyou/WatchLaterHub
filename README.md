@@ -99,7 +99,16 @@ extension/
 ### 開啟電腦上的軟體（電腦小幫手）
 
 Chrome 擴充功能基於安全不能直接開啟程式，所以要裝一個小幫手（Chrome Native Messaging host，原始碼在 `launcher/`）。
-在專案資料夾執行一次：
+
+**Mac（給一般使用者）**：沒裝小幫手時，「開啟」面板會出現「下載小幫手」按鈕，下載 `WatchLaterHub-Launcher.pkg` 雙擊安裝，
+裝好按「重新偵測」即可（不需要 Rust 或終端機）。安裝檔由 GitHub Actions（`.github/workflows/launcher-pkg.yml`）在 `main`
+分支的 `launcher/` 有變動時自動產生，放在 Release「launcher-latest」；也可在 Mac 上執行 `./launcher/build-pkg.sh` 自己產生。
+未簽署的安裝檔第一次打開會出現「無法驗證開發者」，要到「系統設定 → 隱私權與安全性」按「強制打開」；
+要免除這個警告，需在 repo 的 Secrets 設定 Apple Developer ID Installer 憑證（`MAC_INSTALLER_CERT_P12`、
+`MAC_INSTALLER_CERT_PASSWORD`、`MAC_INSTALLER_SIGN_ID`）與公證帳號（`APPLE_ID`、`APPLE_TEAM_ID`、`APPLE_APP_PASSWORD`）。
+移除：`sudo "/Library/Application Support/WatchLaterHub/uninstall.sh"`。
+
+**開發者／Linux**：在專案資料夾執行一次：
 
 ```bash
 ./install-launcher.sh

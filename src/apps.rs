@@ -171,6 +171,8 @@ mod view {
     extern "C" {
         #[wasm_bindgen(js_namespace = ["chrome", "runtime"], js_name = sendNativeMessage, catch)]
         async fn send_native_raw(host: &str, msg: JsValue) -> Result<JsValue, JsValue>;
+        #[wasm_bindgen(js_namespace = ["chrome", "runtime"], js_name = getPlatformInfo, catch)]
+        async fn platform_info_raw() -> Result<JsValue, JsValue>;
     }
 
     thread_local! {
@@ -289,7 +291,9 @@ mod view {
         match native(serde_json::json!({ "action": "open", "path": a.target })).await {
             Ok(_) => status(&format!("已開啟「{}」", a.name), false),
             Err(e) if e.contains("not found") || e.contains("Specified native messaging host") => {
-                status(&format!("無法開啟「{}」", a.name), true);
+                status(&format!("無法開啟「{}」：還沒安裝電腦小幫手", a.name), true);
+                hide("apps-add", false);
+                show_helper_missing().await;
             }
             Err(e) => status(&format!("無法開啟「{}」：{e}", a.name), true),
         }
@@ -522,6 +526,42 @@ mod view {
         });
     }
 
+    /// 沒裝小幫手：依作業系統顯示下載按鈕或安裝說明
+    async fn show_helper_missing() {
+        let os = match platform_info_raw().await {
+            Ok(v) => js_sys::Reflect::get(&v, &"os".into()).ok().and_then(|x| x.as_string()).unwrap_or_default(),
+            Err(_) => String::new(),
+        };
+        let dl: web_sys::HtmlAnchorElement = el("apps-helper-dl").unchecked_into();
+        let (msg, steps, href, label, show_dl) = match os.as_str() {
+            "mac" => (
+                "要開啟電腦上的其他軟體，請先安裝「電腦小幫手」（只需一次）",
+                "下載後雙擊 WatchLaterHub-Launcher.pkg 照指示安裝，裝好回來按「重新偵測」。若出現「無法驗證開發者」，到「系統設定 → 隱私權與安全性」按「強制打開」。",
+                crate::config::LAUNCHER_PKG_URL,
+                "下載小幫手",
+                true,
+            ),
+            "linux" => (
+                "要開啟電腦上的其他軟體，請先安裝「電腦小幫手」（只需一次）",
+                "在專案資料夾執行 ./install-launcher.sh，裝好回來按「重新偵測」。",
+                crate::config::LAUNCHER_HELP_URL,
+                "安裝說明",
+                true,
+            ),
+            _ => ("電腦小幫手目前只支援 Mac 與 Linux；仍可用下方的快速加入或網址開啟軟體。", "", "#", "", false),
+        };
+        text_of("apps-helper-msg", msg);
+        text_of("apps-helper-steps", steps);
+        dl.set_href(href);
+        dl.set_text_content(Some(label));
+        dl.set_hidden(!show_dl);
+        hide("apps-helper-off", false);
+    }
+
+    fn text_of(id: &str, s: &str) {
+        el(id).set_text_content(Some(s));
+    }
+
     /// 檢查小幫手、取得已安裝軟體
     async fn check_helper() {
         match native(serde_json::json!({ "action": "list" })).await {
@@ -529,11 +569,13 @@ mod view {
                 let apps: Vec<Installed> = serde_json::from_value(v["apps"].clone()).unwrap_or_default();
                 INSTALLED.with(|i| *i.borrow_mut() = Some(apps));
                 hide("apps-helper-on", false);
+                hide("apps-helper-off", true);
                 status("", false);
             }
             Err(_) => {
                 INSTALLED.with(|i| *i.borrow_mut() = None);
                 hide("apps-helper-on", true);
+                show_helper_missing().await;
                 status("", false);
             }
         }
@@ -595,6 +637,17 @@ mod view {
             hide("apps-add", !show);
         });
         on_click("apps-url-add", add_url_from_inputs);
+        on_click("apps-helper-recheck", || {
+            spawn(async {
+                text_of("apps-helper-steps", "偵測中…");
+                check_helper().await;
+                if INSTALLED.with(|i| i.borrow().is_some()) {
+                    status("電腦小幫手已安裝，可以搜尋電腦上的軟體了", false);
+                } else {
+                    status("還偵測不到小幫手：裝好後若仍偵測不到，請完全關閉 Chrome 再打開", true);
+                }
+            })
+        });
         listen(&el("apps-url"), "keydown", |e| {
             let k: &KeyboardEvent = e.unchecked_ref();
             if k.key() == "Enter" && !k.is_composing() {

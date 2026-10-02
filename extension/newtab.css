@@ -673,3 +673,10 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 .fav-count { flex: none; font-size: 12px; color: var(--muted); }
 .sync-tag { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--pill); color: var(--muted); font-size: 11px; }
 .list li.synced { padding-left: 20px; }
+
+/* 開啟：沒裝電腦小幫手時的下載提示 */
+.apps-helper-off { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: var(--pill); font-size: 12.5px; line-height: 1.5; }
+.ah-actions { display: flex; gap: 6px; margin-top: 8px; }
+.ah-actions .btn { height: 30px; padding: 0 12px; font-size: 13px; display: inline-flex; align-items: center; text-decoration: none; }
+.ah-steps { margin-top: 6px; color: var(--muted); font-size: 12px; }
+.ah-steps:empty { display: none; }

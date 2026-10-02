@@ -1,0 +1,48 @@
+#!/bin/bash
+# WatchLaterHub 電腦小幫手 .pkg 安裝後執行（以 root 身分）：
+# 告訴 Chrome／Edge／Brave 等瀏覽器小幫手在哪裡（Native Messaging 設定檔）
+set -euo pipefail
+
+HOST=com.watchlaterhub.launcher
+EXT_ID=lnokcijoconplpecgocjgkhhagkdmcce   # extension/manifest.json 的 key 固定了這個 ID
+BIN="/Library/Application Support/WatchLaterHub/launcher"
+
+chmod 755 "$BIN"
+
+manifest() {
+  cat <<JSON
+{
+  "name": "$HOST",
+  "description": "WatchLaterHub 電腦小幫手：開啟電腦上的軟體",
+  "path": "$BIN",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://$EXT_ID/"]
+}
+JSON
+}
+
+# 1. 整台電腦（Chrome、Chromium、Edge 會讀這裡）
+for dir in \
+  "/Library/Google/Chrome/NativeMessagingHosts" \
+  "/Library/Application Support/Chromium/NativeMessagingHosts" \
+  "/Library/Microsoft/Edge/NativeMessagingHosts"; do
+  mkdir -p "$dir"
+  manifest > "$dir/$HOST.json"
+  chmod 644 "$dir/$HOST.json"
+done
+
+# 2. 目前登入的使用者（Brave、Chrome Beta 只讀使用者資料夾；也覆蓋舊版 install-launcher.sh 的設定）
+USER_NAME="$(stat -f%Su /dev/console 2>/dev/null || true)"
+if [ -n "$USER_NAME" ] && [ "$USER_NAME" != "root" ] && [ "$USER_NAME" != "loginwindow" ]; then
+  HOME_DIR="$(dscl . -read "/Users/$USER_NAME" NFSHomeDirectory 2>/dev/null | awk '{print $2}')"
+  for app in "Google/Chrome" "Google/Chrome Beta" "Chromium" "Microsoft Edge" "BraveSoftware/Brave-Browser"; do
+    base="$HOME_DIR/Library/Application Support/$app"
+    if [ -n "$HOME_DIR" ] && [ -d "$base" ]; then
+      dir="$base/NativeMessagingHosts"
+      sudo -u "$USER_NAME" mkdir -p "$dir"
+      manifest | sudo -u "$USER_NAME" tee "$dir/$HOST.json" >/dev/null
+    fi
+  done
+fi
+
+exit 0
