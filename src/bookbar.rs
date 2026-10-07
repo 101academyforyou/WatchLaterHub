@@ -1,7 +1,8 @@
 //! 頂列左側的書籤列（跟 Chrome 的書籤列一樣）：
 //! 書籤列裡的書籤橫向排開，放不下的收進「»」；資料夾點開是下拉選單
 
-use crate::bookmarks::link_anchor;
+use crate::bookmarks::{drop_handler, edit_bookmark, link_anchor};
+use crate::drag::Sortable;
 use crate::chrome::{self, BookmarkNode};
 use crate::ui::{doc, el, listen, spawn};
 use std::cell::RefCell;
@@ -13,18 +14,49 @@ const BAR_ID: &str = "1"; // Chrome 的「書籤列」
 thread_local! {
     /// 書籤列最上層的項目（「»」選單要用）
     static ITEMS: RefCell<Vec<BookmarkNode>> = const { RefCell::new(vec![]) };
+    /// 拖到書籤列空白處時放進哪個資料夾（帳號的書籤列優先）
+    static BAR_NODE: RefCell<Option<BookmarkNode>> = const { RefCell::new(None) };
 }
 
 /// 書籤列裡的項目。登入 Chrome 同步書籤時會有兩個書籤列（本機的 id "1" 和帳號的），
 /// 都用 folderType 認出來後合在一起，帳號的排前面（跟 Chrome 顯示的順序一樣）
 pub fn bar_items(roots: &[BookmarkNode]) -> Vec<BookmarkNode> {
+    bar_folders(roots).into_iter().flat_map(|b| b.children.clone().unwrap_or_default()).collect()
+}
+
+/// 書籤列資料夾（帳號的排前面）
+fn bar_folders(roots: &[BookmarkNode]) -> Vec<&BookmarkNode> {
     let mut bars: Vec<&BookmarkNode> = roots
         .iter()
         .flat_map(|r| r.children.iter().flatten())
         .filter(|n| n.folder_type.as_deref() == Some("bookmarks-bar") || (n.folder_type.is_none() && n.id == BAR_ID))
         .collect();
     bars.sort_by_key(|n| n.id == BAR_ID);
-    bars.into_iter().flat_map(|b| b.children.clone().unwrap_or_default()).collect()
+    bars
+}
+
+/// 右鍵：書籤打開「編輯書籤」視窗；資料夾改名稱
+fn on_context_edit(e: &Element, n: &BookmarkNode) {
+    let node = n.clone();
+    listen(e, "contextmenu", move |ev| {
+        ev.prevent_default();
+        ev.stop_propagation();
+        close_menu();
+        let node = node.clone();
+        if !is_folder(&node) {
+            spawn(edit_bookmark(node));
+            return;
+        }
+        let win = web_sys::window().unwrap();
+        if let Ok(Some(t)) = win.prompt_with_message_and_default("資料夾名稱", &node.title) {
+            let t = t.trim().to_string();
+            if !t.is_empty() && t != node.title {
+                spawn(async move {
+                    let _ = chrome::bookmarks_rename(&node.id, &t).await;
+                });
+            }
+        }
+    });
 }
 
 fn is_folder(n: &BookmarkNode) -> bool {
@@ -50,6 +82,7 @@ async fn render() {
     let bar = el("bbar");
     let roots = chrome::bookmarks_tree().await.unwrap_or_default();
     let items = bar_items(&roots);
+    BAR_NODE.with(|b| *b.borrow_mut() = bar_folders(&roots).first().map(|n| (*n).clone()));
     bar.set_inner_html("");
     for n in &items {
         let e = if is_folder(n) {
@@ -64,8 +97,16 @@ async fn render() {
         } else {
             let a = link_anchor(&n.url.clone().unwrap_or_default(), &label(n));
             a.set_class_name("bb-item");
+            let _ = a.set_attribute("title", &format!("{}\n{}\n（右鍵編輯，可拖曳）", label(n), n.url.clone().unwrap_or_default()));
             a
         };
+        // 拖曳：左右半邊 = 放到前面／後面；資料夾中間 = 放進去。跟右側書籤面板是同一組，可以互拖
+        let _ = e.set_attribute("data-drag-x", "");
+        crate::drag::sortable(
+            Sortable { item: e.clone(), handle: Some(e.clone()), zone: e.clone(), group: "bm", id: n.id.clone(), can_contain: is_folder(n) },
+            drop_handler(n, false),
+        );
+        on_context_edit(&e, n);
         bar.append_child(&e).unwrap();
     }
     ITEMS.with(|i| *i.borrow_mut() = items);
@@ -171,10 +212,12 @@ fn fill_menu(anchor: &Element, items: Vec<BookmarkNode>, parents: Vec<Vec<Bookma
                 e.stop_propagation();
                 fill_menu(&anchor, node.children.clone().unwrap_or_default(), up.clone());
             });
+            on_context_edit(&b, n);
             b
         } else {
             let a = link_anchor(&n.url.clone().unwrap_or_default(), &label(n));
             let _ = a.class_list().add_1("bb-m-item");
+            on_context_edit(&a, n);
             listen(&a, "click", |_| close_menu());
             a
         };
@@ -183,6 +226,17 @@ fn fill_menu(anchor: &Element, items: Vec<BookmarkNode>, parents: Vec<Vec<Bookma
 }
 
 pub fn start() {
+    // 拖到書籤列的空白處：放到書籤列最後面
+    let bar: Element = el("bbar").into();
+    let _ = bar.set_attribute("data-drag-x", "");
+    crate::drag::sortable(
+        Sortable { item: bar.clone(), handle: None, zone: bar, group: "bm", id: "bbar".into(), can_contain: true },
+        std::rc::Rc::new(|from, to, pos| {
+            if let Some(n) = BAR_NODE.with(|b| b.borrow().clone()) {
+                drop_handler(&n, true)(from, to, pos);
+            }
+        }),
+    );
     let more = el("bbar-more");
     let anchor: Element = more.clone().into();
     listen(&more, "click", move |e| {

@@ -33,9 +33,14 @@ fn clear_marks(e: &Element) {
 }
 
 /// 滑鼠在元素上半部 → 前面；下半部 → 後面；可放入的資料夾中間 1/2 → 放進去
+/// 元素有 `data-drag-x` 屬性時（橫向排列，例如頂列書籤列）改看左右
 fn pos_of(target: &Element, ev: &DragEvent, can_contain: bool) -> Pos {
     let r = target.get_bounding_client_rect();
-    let y = (ev.client_y() as f64 - r.top()) / r.height().max(1.0);
+    let y = if target.has_attribute("data-drag-x") {
+        (ev.client_x() as f64 - r.left()) / r.width().max(1.0)
+    } else {
+        (ev.client_y() as f64 - r.top()) / r.height().max(1.0)
+    };
     if can_contain {
         if y < 0.25 {
             Pos::Before

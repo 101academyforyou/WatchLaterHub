@@ -77,6 +77,9 @@ body {
 .bb-m-folder .bb-t { flex: 1; white-space: nowrap; }
 .bb-m-folder::after { content: "›"; color: var(--muted); }
 .bb-back { color: var(--muted); border-bottom: 1px solid var(--line); border-radius: 8px 8px 0 0; margin-bottom: 4px; }
+.bb-item.drop-before { box-shadow: inset 2px 0 0 var(--accent); }
+.bb-item.drop-after { box-shadow: inset -2px 0 0 var(--accent); }
+.bbar.drop-before, .bbar.drop-after, .bbar.drop-into { box-shadow: none; outline: none; background: color-mix(in srgb, var(--accent) 8%, transparent) !important; border-radius: 999px; }
 .bb-empty { padding: 8px; color: var(--muted); font-size: 13px; }
 
 main { display: flex; flex-direction: column; align-items: center; padding: 6vh 16px 40px; }

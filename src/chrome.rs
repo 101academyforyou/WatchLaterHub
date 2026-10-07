@@ -370,6 +370,11 @@ pub async fn bookmarks_edit(id: &str, title: &str, url: &str, parent_id: &str) -
 }
 
 /// 搬到 `parent_id` 資料夾的第 `index` 個位置（None = 最後）
+/// 只改名稱（資料夾用）
+pub async fn bookmarks_rename(id: &str, title: &str) -> R<()> {
+    bookmarks_update_raw(id, to_js(&serde_json::json!({ "title": title }))).await.map(|_| ()).map_err(err_msg)
+}
+
 pub async fn bookmarks_move(id: &str, parent_id: &str, index: Option<u32>) -> R<()> {
     let mut dest = serde_json::json!({ "parentId": parent_id });
     if let Some(i) = index {

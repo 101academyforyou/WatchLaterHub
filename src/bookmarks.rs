@@ -145,7 +145,7 @@ pub(crate) async fn open_editor_for(prefill: Option<(String, String)>) {
 }
 
 /// 打開「編輯書籤」視窗，編輯這一個書籤（書籤列上每個書籤的 ✎）
-async fn edit_bookmark(n: BookmarkNode) {
+pub(crate) async fn edit_bookmark(n: BookmarkNode) {
     open_editor_with(Some(n), None).await;
 }
 
@@ -359,7 +359,8 @@ pub(crate) fn link_anchor(url: &str, label: &str) -> Element {
 // ---------- 拖曳排序 ----------
 
 /// 有書籤被拖到 `target` 上放開
-fn drop_handler(target: &BookmarkNode, is_root: bool) -> OnDrop {
+/// 拖放到 `target`（書籤或資料夾）時要做的事；頂列書籤列也用這個
+pub(crate) fn drop_handler(target: &BookmarkNode, is_root: bool) -> OnDrop {
     let (tid, parent, index) = (target.id.clone(), target.parent_id.clone(), target.index.unwrap_or(0));
     Rc::new(move |from, _to, pos| {
         let (tid, parent) = (tid.clone(), parent.clone());
