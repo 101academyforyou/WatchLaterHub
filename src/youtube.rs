@@ -2,6 +2,7 @@
 
 use crate::chrome::{self, to_js, R};
 use crate::config;
+use crate::playlist::{self, WATCH_LATER_ID};
 use crate::store::YT_KEY;
 use crate::videos::{dedupe, is_valid_client_id, parse_fragment, query, Video};
 use serde::{Deserialize, Serialize};
@@ -175,7 +176,10 @@ async fn pages(path: &str, params: &[(&str, &str)], map: fn(&Value) -> Option<Vi
 }
 
 pub async fn list_sources() -> R<Vec<Source>> {
-    let mut out = vec![Source { id: LIKED.into(), title: "👍 喜歡的影片".into(), count: None }];
+    let mut out = vec![
+        Source { id: WATCH_LATER_ID.into(), title: "🕒 稍後觀看".into(), count: None },
+        Source { id: LIKED.into(), title: "👍 喜歡的影片".into(), count: None },
+    ];
     let mut page_token = String::new();
     loop {
         let mut p = vec![("part", "snippet,contentDetails"), ("mine", "true"), ("maxResults", "50")];
@@ -209,7 +213,12 @@ fn playlist_item(it: &Value) -> Option<Video> {
 }
 
 async fn fetch_source(id: &str) -> R<Vec<Video>> {
-    if id == LIKED {
+    if id == WATCH_LATER_ID {
+        // YouTube API 不開放讀取「稍後觀看」，改用這個瀏覽器登入的 YouTube 讀取清單頁面
+        let mut v = playlist::fetch_watch_later().await?;
+        v.truncate(config::MAX_PER_SOURCE);
+        Ok(v)
+    } else if id == LIKED {
         pages("videos", &[("part", "snippet"), ("myRating", "like")], liked_item).await
     } else {
         pages("playlistItems", &[("part", "snippet"), ("playlistId", id)], playlist_item).await
