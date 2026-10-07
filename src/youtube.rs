@@ -178,8 +178,8 @@ async fn pages(path: &str, params: &[(&str, &str)], map: fn(&Value) -> Option<Vi
 pub async fn list_sources() -> R<Vec<Source>> {
     let liked = api(API, "videos", &[("part", "id"), ("myRating", "like"), ("maxResults", "1")], false).await?;
     let mut out = vec![
-        Source { id: WATCH_LATER_ID.into(), title: "🕒 稍後觀看".into(), count: playlist::watch_later_count().await },
-        Source { id: LIKED.into(), title: "👍 喜歡的影片".into(), count: liked["pageInfo"]["totalResults"].as_u64() },
+        Source { id: WATCH_LATER_ID.into(), title: "稍後觀看".into(), count: playlist::watch_later_count().await },
+        Source { id: LIKED.into(), title: "喜歡的影片".into(), count: liked["pageInfo"]["totalResults"].as_u64() },
     ];
     let mut page_token = String::new();
     loop {

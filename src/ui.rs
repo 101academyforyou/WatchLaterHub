@@ -401,6 +401,11 @@ async fn yt_status() {
     text("yt-status", &msg);
 }
 
+/// YouTube「稍後觀看」的時鐘圖示
+const WATCH_LATER_ICON: &str = r#"<svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>"#;
+/// YouTube「喜歡的影片」的大拇指圖示
+const LIKED_ICON: &str = r#"<svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>"#;
+
 async fn render_yt(refresh_sources: bool) {
     let s = youtube::settings().await;
     hide("yt-off", s.connected);
@@ -425,13 +430,29 @@ async fn render_yt(refresh_sources: bool) {
     box_.set_inner_html("");
     for src in srcs {
         let label = doc().create_element("label").unwrap();
-        label.set_inner_html(r#"<input type="checkbox"><span></span><span class="n"></span>"#);
+        label.set_inner_html(r#"<input type="checkbox"><span class="t"></span><span class="n"></span>"#);
+        // 稍後觀看、喜歡的影片：用 YouTube 的圖示（舊版存的名稱前面有 emoji，一併換掉）
+        let builtin = match src.id.as_str() {
+            crate::playlist::WATCH_LATER_ID => Some((WATCH_LATER_ICON, "稍後觀看")),
+            youtube::LIKED => Some((LIKED_ICON, "喜歡的影片")),
+            _ => None,
+        };
+        let src = match builtin {
+            Some((icon, name)) => {
+                let i = doc().create_element("span").unwrap();
+                i.set_class_name("src-ico");
+                let _ = i.set_attribute("aria-hidden", "true");
+                i.set_inner_html(icon);
+                label.insert_before(&i, label.query_selector(".t").unwrap().as_ref().map(|s| s.unchecked_ref::<web_sys::Node>())).unwrap();
+                youtube::Source { title: name.into(), ..src }
+            }
+            None => src,
+        };
         let cb: HtmlInputElement = label.query_selector("input").unwrap().unwrap().unchecked_into();
         cb.set_checked(s.sources.contains(&src.id));
         cb.set_value(&src.id);
-        let spans = label.query_selector_all("span").unwrap();
-        spans.item(0).unwrap().set_text_content(Some(&src.title));
-        spans.item(1).unwrap().set_text_content(Some(&src.count.map(|c| format!("{c} 部")).unwrap_or_default()));
+        label.query_selector(".t").unwrap().unwrap().set_text_content(Some(&src.title));
+        label.query_selector(".n").unwrap().unwrap().set_text_content(Some(&src.count.map(|c| format!("{c} 部")).unwrap_or_default()));
         listen(&cb, "change", |_| {
             let ids: Vec<String> = all("#yt-sources input:checked")
                 .into_iter()
