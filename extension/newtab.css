@@ -244,6 +244,7 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 .bm-row:hover .bm-del, .bm-del:focus-visible { opacity: 1; }
 .bm-del:hover { background: var(--line); color: var(--fg); }
 @media (hover: none) { .bm-del { opacity: 1; } }
+.bm-row .bm-edit { margin-right: 0; font-size: 13px; }
 .bm-undo {
   display: flex; align-items: center; gap: 10px; margin: 0 8px 8px; padding: 10px 12px;
   border-radius: 10px; background: var(--fg); color: var(--bg); font-size: 13px;

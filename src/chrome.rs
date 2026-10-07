@@ -356,6 +356,10 @@ pub async fn bookmarks_edit(id: &str, title: &str, url: &str, parent_id: &str) -
     bookmarks_update_raw(id, to_js(&serde_json::json!({ "title": title, "url": url })))
         .await
         .map_err(err_msg)?;
+    // 資料夾沒變就不搬，保留原本的位置
+    if bookmark_get(id).await.and_then(|n| n.parent_id).as_deref() == Some(parent_id) {
+        return Ok(());
+    }
     bookmarks_move_raw(id, to_js(&serde_json::json!({ "parentId": parent_id })))
         .await
         .map(|_| ())

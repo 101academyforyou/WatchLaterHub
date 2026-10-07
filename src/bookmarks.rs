@@ -141,6 +141,16 @@ pub(crate) async fn open_editor_for(prefill: Option<(String, String)>) {
         Some((_, url)) => chrome::bookmarks_find_url(url).await.into_iter().next(),
         None => None,
     };
+    open_editor_with(existing, prefill).await;
+}
+
+/// 打開「編輯書籤」視窗，編輯這一個書籤（書籤列上每個書籤的 ✎）
+async fn edit_bookmark(n: BookmarkNode) {
+    open_editor_with(Some(n), None).await;
+}
+
+/// `existing`：要編輯的書籤（None 為新增）；`prefill`：新增時預先填入的 (名稱, 網址)
+async fn open_editor_with(existing: Option<BookmarkNode>, prefill: Option<(String, String)>) {
     let last: String = chrome::get_or(LAST_FOLDER_KEY, BAR_ID.to_string()).await;
     let (title, url, folder) = match (&existing, prefill) {
         (Some(b), _) => (b.title.clone(), b.url.clone().unwrap_or_default(), b.parent_id.clone().unwrap_or(last)),
@@ -242,7 +252,7 @@ pub(crate) async fn all_urls() -> std::collections::HashSet<String> {
     out
 }
 
-/// 一列書籤：連結 + 右側 ✕ 移除
+/// 一列書籤：連結 + 右側 ✎ 編輯、✕ 移除
 fn make_link(n: &BookmarkNode) -> Element {
     let row = doc().create_element("div").unwrap();
     row.set_class_name("bm-row");
@@ -261,6 +271,20 @@ fn make_link(n: &BookmarkNode) -> Element {
             }
         }
     });
+
+    let ed = doc().create_element("button").unwrap();
+    ed.set_class_name("bm-del bm-edit");
+    ed.set_text_content(Some("✎"));
+    let _ = ed.set_attribute("type", "button");
+    let _ = ed.set_attribute("title", "編輯書籤（名稱、網址、資料夾）");
+    let _ = ed.set_attribute("aria-label", &format!("編輯書籤：{}", label_of(n)));
+    let node = n.clone();
+    listen(&ed, "click", move |e| {
+        e.prevent_default();
+        e.stop_propagation();
+        spawn(edit_bookmark(node.clone()));
+    });
+    row.append_child(&ed).unwrap();
 
     let x = doc().create_element("button").unwrap();
     x.set_class_name("bm-del");
