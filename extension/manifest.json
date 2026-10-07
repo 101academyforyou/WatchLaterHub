@@ -27,7 +27,8 @@
     "history",
     "geolocation",
     "nativeMessaging",
-    "cookies"
+    "cookies",
+    "unlimitedStorage"
   ],
   "host_permissions": [
     "https://www.youtube.com/*",

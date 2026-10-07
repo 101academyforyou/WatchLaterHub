@@ -271,6 +271,23 @@
   </dialog>
 
 
+  <!-- TODO 筆記 -->
+  <dialog id="note-dialog" class="note-dialog" aria-labelledby="note-h">
+    <div class="m-head">
+      <h2 id="note-h">📝 筆記</h2>
+      <button id="note-close" class="x" aria-label="關閉">✕</button>
+    </div>
+    <label class="field"><span>主題</span><input id="note-title" type="text" placeholder="待辦事項主題" autocomplete="off"></label>
+    <textarea id="note-text" rows="8" placeholder="寫更多筆記…（可以直接貼上圖片，或把圖片拖進來）"></textarea>
+    <div id="note-imgs" class="note-imgs" hidden></div>
+    <div class="m-row">
+      <span><label class="btn" for="note-file">🖼 上傳圖片</label><input id="note-file" type="file" accept="image/*" multiple hidden></span>
+      <span id="note-msg" class="msg"></span>
+      <button id="note-done" class="btn primary" type="button">完成</button>
+    </div>
+    <div id="note-view" class="note-view" hidden title="點一下關閉"><img alt=""></div>
+  </dialog>
+
   <!-- 任務矩陣（緊急／重要） -->
   <dialog id="quad" class="quad">
     <div class="m-head">

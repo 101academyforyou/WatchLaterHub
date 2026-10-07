@@ -22,6 +22,49 @@ pub struct Todo {
     /// 任務矩陣：1 重要且緊急、2 重要不緊急、3 緊急不重要、4 不緊急不重要
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quadrant: Option<u8>,
+    /// 有筆記或圖片（內容另外存在 `note_key(id)`，清單本身保持很小）
+    #[serde(rename = "hasNote", default, skip_serializing_if = "std::ops::Not::not")]
+    pub has_note: bool,
+}
+
+/// 每個待辦事項的筆記（📝 小視窗）
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+pub struct Note {
+    #[serde(default)]
+    pub text: String,
+    /// 圖片（data: 網址）
+    #[serde(default)]
+    pub images: Vec<String>,
+}
+
+impl Note {
+    pub fn is_empty(&self) -> bool {
+        self.text.trim().is_empty() && self.images.is_empty()
+    }
+}
+
+/// 筆記存在 chrome.storage 的鍵名
+pub fn note_key(id: &str) -> String {
+    format!("todoNote:{id}")
+}
+
+/// 清單變動後被刪掉的項目（要一起刪掉它們的筆記）
+pub fn removed_ids(before: &[Todo], after: &[Todo]) -> Vec<String> {
+    before.iter().filter(|b| !after.iter().any(|a| a.id == b.id)).map(|b| b.id.clone()).collect()
+}
+
+/// 改主題（空白不改）
+pub fn set_title(list: &mut [Todo], id: &str, text: &str) {
+    let text = text.trim();
+    if let Some(t) = list.iter_mut().find(|t| t.id == id).filter(|_| !text.is_empty()) {
+        t.text = text.to_string();
+    }
+}
+
+pub fn set_has_note(list: &mut [Todo], id: &str, has: bool) {
+    if let Some(t) = list.iter_mut().find(|t| t.id == id) {
+        t.has_note = has;
+    }
 }
 
 /// 任務矩陣：(編號, 名稱, 建議)
@@ -54,7 +97,16 @@ pub fn add(list: &mut Vec<Todo>, text: &str, id: String) -> bool {
     if text.is_empty() {
         return false;
     }
-    list.push(Todo { id, text: text.to_string(), done: false, remind_at: None, notified: false, priority: None, quadrant: None });
+    list.push(Todo {
+        id,
+        text: text.to_string(),
+        done: false,
+        remind_at: None,
+        notified: false,
+        priority: None,
+        quadrant: None,
+        has_note: false,
+    });
     true
 }
 
@@ -319,8 +371,14 @@ pub(crate) mod view {
     fn update(f: impl FnOnce(&mut Vec<Todo>) + 'static) {
         spawn(async move {
             let mut list = load().await;
+            let before = list.clone();
             f(&mut list);
             save(&list).await;
+            // 刪掉的項目，筆記也一起刪
+            let gone: Vec<String> = removed_ids(&before, &list).iter().map(|id| note_key(id)).collect();
+            if !gone.is_empty() {
+                chrome::remove(&gone.iter().map(String::as_str).collect::<Vec<_>>()).await;
+            }
             render_list(&list);
             render_matrix(&list);
         });
@@ -368,7 +426,7 @@ pub(crate) mod view {
         let li = doc().create_element("li").unwrap();
         li.set_class_name(if t.done { "todo-item done" } else { "todo-item" });
         li.set_inner_html(
-            r#"<input type="checkbox"><div class="todo-body"><span class="todo-text" title="點兩下編輯"></span></div><span class="todo-prios" role="radiogroup" aria-label="優先順序"></span><button class="todo-alarm" type="button" title="設定提醒時間">⏰</button><button class="bm-del" type="button" title="刪除">✕</button>"#,
+            r#"<input type="checkbox"><div class="todo-body"><span class="todo-text" title="點兩下編輯"></span></div><span class="todo-prios" role="radiogroup" aria-label="優先順序"></span><button class="todo-note" type="button" title="筆記與圖片">📝</button><button class="todo-alarm" type="button" title="設定提醒時間">⏰</button><button class="bm-del" type="button" title="刪除">✕</button>"#,
         );
         // 優先順序：三個圓點直接排在 ⏰ 左邊，點一下選定，再點一次取消
         {
@@ -429,6 +487,18 @@ pub(crate) mod view {
             let (li2, id, at) = (li.clone(), t.id.clone(), t.remind_at);
             listen(&li.query_selector(".todo-alarm").unwrap().unwrap(), "click", move |_| {
                 toggle_picker(&li2, id.clone(), at)
+            });
+        }
+        {
+            let nb = li.query_selector(".todo-note").unwrap().unwrap();
+            if t.has_note {
+                let _ = nb.class_list().add_1("has");
+                let _ = nb.set_attribute("title", "打開筆記（有內容）");
+            }
+            let id = t.id.clone();
+            listen(&nb, "click", move |e| {
+                e.stop_propagation();
+                crate::todo_note::open(id.clone());
             });
         }
         li.prepend_with_node_1(&crate::drag::grip()).unwrap();
@@ -890,14 +960,19 @@ pub(crate) mod view {
             let inside = e
                 .target()
                 .and_then(|t| t.dyn_into::<web_sys::Node>().ok())
-                .map(|n| el("todo").contains(Some(&n)) || el("todo-toggle").contains(Some(&n)) || el("quad").contains(Some(&n)))
+                .map(|n| {
+                    el("todo").contains(Some(&n))
+                        || el("todo-toggle").contains(Some(&n))
+                        || el("quad").contains(Some(&n))
+                        || el("note-dialog").contains(Some(&n))
+                })
                 .unwrap_or(false);
             if !inside {
                 set_open(false);
             }
         });
         listen(&d, "keydown", |e| {
-            if is_open() && !matrix_open() && e.unchecked_ref::<KeyboardEvent>().key() == "Escape" {
+            if is_open() && !matrix_open() && !crate::todo_note::is_open() && e.unchecked_ref::<KeyboardEvent>().key() == "Escape" {
                 set_open(false);
                 let _ = el("todo-toggle").focus();
             }

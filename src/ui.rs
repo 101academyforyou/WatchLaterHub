@@ -522,6 +522,7 @@ pub fn start() {
     // 右側書籤
     crate::bookmarks::start();
     crate::bookbar::start();
+    crate::todo_note::start();
     crate::todo::start();
     crate::recent::start();
     crate::apps::start();

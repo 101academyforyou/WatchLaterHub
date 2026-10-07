@@ -18,6 +18,7 @@ mod chrome;
 mod drag;
 mod reminder_page;
 mod store;
+mod todo_note;
 mod ui;
 mod youtube;
 

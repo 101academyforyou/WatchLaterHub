@@ -24,6 +24,7 @@ features = [
   "HtmlImageElement", "HtmlAnchorElement", "CssStyleDeclaration",
   "Event", "EventTarget", "KeyboardEvent", "Response", "DomTokenList", "HtmlSelectElement", "HtmlOptionElement", "MouseEvent", "DragEvent", "DataTransfer", "DomRect", "History", "AudioContext", "BaseAudioContext", "AudioNode", "AudioParam", "AudioDestinationNode", "OscillatorNode", "AudioScheduledSourceNode", "GainNode", "UrlSearchParams", "Blob", "BlobPropertyBag", "Url", "HtmlCollection",
   "HtmlCanvasElement", "CanvasRenderingContext2d", "ImageData",
+  "File", "FileList", "FileReader", "ClipboardEvent", "DataTransferItem", "DataTransferItemList", "DomStringList",
 ]
 
 [profile.release]
