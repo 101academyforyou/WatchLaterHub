@@ -9,12 +9,27 @@
 </head>
 <body>
   <div class="topbar">
-    <button id="open-manage" class="chip">☰ 管理收藏 <span id="count"></span></button>
-    <button class="gbtn gbtn-sm js-login" hidden><img class="g-logo" src="https://developers.google.com/identity/images/g-logo.png" alt=""><span>Continue with Google</span></button>
+    <button id="open-manage" class="chip">☰ 收藏 <span id="count"></span></button>
+    <button id="todo-toggle" class="chip" aria-controls="todo" aria-expanded="false" title="待辦清單">✓ TODO <span id="todo-count" class="cnt"></span></button>
+    <button id="apps-toggle" class="chip" aria-controls="apps" aria-expanded="false" title="開啟電腦上的軟體">⏺︎ 開啟</button>
+    <button id="bm-toggle" class="chip" aria-controls="bm" title="顯示／隱藏書籤">★ 書籤</button>
+    <button id="recent-toggle" class="chip" aria-controls="recent" aria-expanded="false" title="最近瀏覽"><svg class="drop" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c-.3 0-.6.15-.78.4C9.6 5.1 5.5 10.6 5.5 14.5a6.5 6.5 0 0 0 13 0c0-3.9-4.1-9.4-5.72-11.6A.97.97 0 0 0 12 2.5z"/></svg> 最近</button>
     <button id="avatar" class="avatar" hidden title="YouTube 帳號"><img alt=""></button>
   </div>
 
   <main>
+    <form id="search" action="https://www.google.com/search" method="get" autocomplete="off">
+      <div class="box">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input id="q" name="q" type="text" autofocus aria-label="搜尋">
+        <button type="button" id="ai" class="pill" title="以 Google AI 模式搜尋">✦ AI 模式</button>
+      </div>
+      <div class="buttons">
+        <button type="submit" class="btn">Google 搜尋</button>
+        <button type="button" id="lucky" class="btn">好手氣</button>
+      </div>
+    </form>
+
     <!-- 隨機影片 -->
     <section id="video" class="video" hidden>
       <a id="v-link" class="thumb">
@@ -38,35 +53,262 @@
       <div id="login-error" class="login-error"></div>
     </section>
 
-    <form id="search" action="https://www.google.com/search" method="get" autocomplete="off">
-      <div class="box">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <input id="q" name="q" type="text" autofocus aria-label="搜尋">
-        <button type="button" id="ai" class="pill" title="以 Google AI 模式搜尋">✦ AI 模式</button>
-      </div>
-      <div class="buttons">
-        <button type="submit" class="btn">Google 搜尋</button>
-        <button type="button" id="lucky" class="btn">好手氣</button>
-      </div>
-    </form>
   </main>
 
-  <!-- 管理收藏 -->
+  <!-- TODO 清單 -->
+  <section id="todo" class="todo" hidden aria-label="TODO 清單">
+    <div class="bm-head">
+      <h2>TODO</h2>
+      <div class="todo-today">
+        <button id="todo-weather" class="todo-weather" type="button" hidden></button>
+        <button id="todo-quad-btn" class="todo-date" type="button" title="打開任務矩陣（緊急／重要）">✦ 任務矩陣</button>
+        <button id="todo-sw" class="todo-timer" type="button" hidden title="碼表"></button>
+        <button id="todo-timer" class="todo-timer" type="button" hidden title="倒數計時"></button>
+        <button id="todo-date" class="todo-date" type="button" title="點一下打開計時器"></button>
+      </div>
+      <button id="todo-close" class="x" aria-label="關閉">✕</button>
+    </div>
+    <!-- 計時器：點標題列的日期才出現 -->
+    <div id="tm-card" class="tm-card" hidden>
+      <div class="tm-tabs" role="tablist">
+        <button id="tm-tab-cd" class="on" type="button" role="tab">⏱ 倒數計時</button>
+        <button id="tm-tab-sw" type="button" role="tab">⏲ 碼表</button>
+      </div>
+      <div id="tm-cd">
+      <div id="tm-presets-wrap">
+        <div class="tm-presets">
+          <button id="tm-1" class="tm-btn" type="button">1 分鐘</button>
+          <button id="tm-5" class="tm-btn" type="button">5 分鐘</button>
+          <button id="tm-10" class="tm-btn" type="button">10 分鐘</button>
+          <button id="tm-25" class="tm-btn" type="button">25 分鐘</button>
+        </div>
+        <div class="tm-custom-row">
+          <input id="tm-custom" type="text" inputmode="decimal" placeholder="自訂：分鐘（如 15、2.5）或 分:秒（如 1:30）" autocomplete="off" aria-label="自訂倒數時間">
+          <button id="tm-go" class="btn primary" type="button">開始</button>
+        </div>
+        <div id="tm-msg" class="tm-msg"></div>
+      </div>
+      <div id="tm-run" class="tm-run" hidden>
+        <div class="tm-row">
+          <div><div id="tm-left" class="tm-left"></div><div id="tm-label" class="tm-label"></div></div>
+          <div class="tm-actions">
+            <button id="tm-pause" class="btn" type="button"></button>
+            <button id="tm-cancel" class="btn" type="button">取消</button>
+          </div>
+        </div>
+        <div class="tm-track"><div id="tm-bar" class="tm-bar"></div></div>
+      </div>
+      </div>
+      <div id="tm-sw" hidden>
+        <div class="tm-row">
+          <div id="sw-time" class="tm-left">00:00.00</div>
+          <div class="tm-actions">
+            <button id="sw-lap" class="btn" type="button" disabled>計次</button>
+            <button id="sw-toggle" class="btn primary" type="button">▶ 開始</button>
+          </div>
+        </div>
+        <ol id="sw-laps" class="sw-laps"></ol>
+        <div id="sw-foot" class="sw-foot" hidden>
+          <button id="sw-export" class="chip" type="button" title="把計次紀錄下載成 CSV（可用 Excel 開啟）">匯出 CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 天氣卡片：點標題列的天氣標籤才出現 -->
+    <div id="wx-card" class="wx-card" hidden>
+      <div class="wx-loc">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+        <b id="wx-place"></b><span class="dot">·</span><button id="wx-pick" class="wx-link" type="button">選擇地區</button>
+      </div>
+      <div id="wx-pick-row" class="wx-pick-row" hidden>
+        <input id="wx-city" type="text" placeholder="輸入城市，例如：台中、高雄、東京" autocomplete="off">
+        <button id="wx-city-go" class="btn primary" type="button">搜尋</button>
+        <button id="wx-here" class="btn" type="button">使用目前位置</button>
+      </div>
+      <div id="wx-results" class="wx-results"></div>
+      <div id="wx-pick-msg" class="wx-pick-msg"></div>
+      <div class="wx-main">
+        <div id="wx-icon" class="wx-icon"></div>
+        <div class="wx-temp"><span id="wx-t"></span><span class="wx-units"><button id="wx-c" type="button">°C</button><span>|</span><button id="wx-f" type="button">°F</button></span></div>
+        <div id="wx-meta" class="wx-meta"></div>
+        <div class="wx-side"><div class="wx-title">天氣</div><div id="wx-time"></div><div id="wx-cond"></div></div>
+      </div>
+      <div class="wx-tabs" role="tablist">
+        <button type="button" role="tab" data-tab="temp">氣溫</button>
+        <button type="button" role="tab" data-tab="rain">降雨機率</button>
+        <button type="button" role="tab" data-tab="wind">風向/風速</button>
+      </div>
+      <div id="wx-chart" class="wx-chart"></div>
+      <div id="wx-days" class="wx-days"></div>
+    </div>
+    <div class="todo-new">
+      <input id="todo-input" type="text" placeholder="新增待辦事項，按 Enter 加入" autocomplete="off">
+      <button id="todo-add" class="btn primary" type="button">加入</button>
+    </div>
+    <div class="panel-search"><svg class="ps-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="todo-search" type="search" placeholder="搜尋待辦事項" autocomplete="off" spellcheck="false" aria-label="搜尋待辦事項"></div>
+    <ul id="todo-list" class="todo-list"></ul>
+    <div id="todo-foot" class="todo-foot" hidden>
+      <span id="todo-summary"></span>
+      <span class="actions">
+        <button id="todo-export" class="chip" type="button" title="把 TODO 清單下載成 CSV（可用 Excel 開啟）">匯出 CSV</button>
+        <button id="todo-clear" class="chip" type="button">清除已完成</button>
+      </span>
+    </div>
+  </section>
+
+  <!-- 開啟：電腦上的軟體 -->
+  <section id="apps" class="todo apps" hidden aria-label="開啟軟體">
+    <div class="bm-head">
+      <h2>開啟</h2>
+      <span class="spacer"></span>
+      <div class="bm-pins" aria-label="常用軟體">
+        <div id="app-pin-0" class="bm-pin app-pin pin-empty"></div>
+        <div id="app-pin-1" class="bm-pin app-pin pin-empty"></div>
+        <div id="app-pin-2" class="bm-pin app-pin pin-empty"></div>
+        <div id="app-pin-3" class="bm-pin app-pin pin-empty"></div>
+        <div id="app-pin-4" class="bm-pin app-pin pin-empty"></div>
+      </div>
+      <button id="apps-add-btn" class="chip" type="button">＋ 新增</button>
+      <button id="apps-close" class="x" aria-label="關閉">✕</button>
+    </div>
+    <div id="apps-grid" class="apps-grid"></div>
+    <div id="apps-add" class="apps-add" hidden>
+      <div id="apps-helper-on" hidden>
+        <div class="panel-search"><svg class="ps-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="apps-search" type="search" placeholder="搜尋電腦上的軟體" autocomplete="off" spellcheck="false" aria-label="搜尋電腦上的軟體"></div>
+        <div id="apps-installed" class="apps-installed"></div>
+      </div>
+      <div id="apps-presets" class="apps-presets"></div>
+      <div class="apps-url-row">
+        <input id="apps-url-name" type="text" placeholder="名稱" autocomplete="off">
+        <input id="apps-url" type="text" placeholder="網址，例如 vscode:// 或 https://…" autocomplete="off" spellcheck="false">
+        <button id="apps-url-add" class="btn" type="button">加入</button>
+      </div>
+    </div>
+    <div id="apps-status" class="apps-status"></div>
+  </section>
+
+  <!-- 最近瀏覽 -->
+  <section id="recent" class="todo recent" hidden aria-label="最近瀏覽">
+    <div class="bm-head">
+      <h2>最近</h2>
+      <div class="recent-filters" role="group" aria-label="期間">
+        <button id="rf-today" class="rf" type="button">今天</button>
+        <button id="rf-yesterday" class="rf" type="button">昨天</button>
+        <button id="rf-before" class="rf" type="button">前天</button>
+        <button id="rf-week" class="rf" type="button">本週</button>
+        <button id="rf-custom" class="rf" type="button">自訂</button>
+      </div>
+      <button id="recent-clear" class="chip" type="button" title="清空這個清單（不會刪除瀏覽紀錄）">清空</button>
+      <button id="recent-close" class="x" aria-label="關閉">✕</button>
+    </div>
+    <div class="panel-search"><svg class="ps-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="recent-search" type="search" placeholder="搜尋最近瀏覽" autocomplete="off" spellcheck="false" aria-label="搜尋最近瀏覽"></div>
+    <div id="rc-row" class="rc-row" hidden>
+      <div class="rc-line"><span class="rc-lbl">從</span><input id="rc-from-d" type="date" aria-label="開始日期"><select id="rc-from-h" aria-label="開始（時）"></select><span>:</span><select id="rc-from-m" aria-label="開始（分）"></select></div>
+      <div class="rc-line"><span class="rc-lbl">到</span><input id="rc-to-d" type="date" aria-label="結束日期"><select id="rc-to-h" aria-label="結束（時）"></select><span>:</span><select id="rc-to-m" aria-label="結束（分）"></select>
+      <button id="rc-go" class="btn primary" type="button">套用</button></div>
+    </div>
+    <ul id="recent-list" class="todo-list recent-list"></ul>
+  </section>
+
+  <!-- 右側書籤 -->
+  <aside id="bm" class="bm" hidden aria-label="書籤">
+    <div class="bm-head">
+      <h2 id="bm-title">書籤</h2>
+      <span class="spacer"></span>
+      <div class="bm-pins" aria-label="釘選的書籤">
+        <div id="bm-pin-0" class="bm-pin pin-empty"></div>
+        <div id="bm-pin-1" class="bm-pin pin-empty"></div>
+        <div id="bm-pin-2" class="bm-pin pin-empty"></div>
+        <div id="bm-pin-3" class="bm-pin pin-empty"></div>
+        <div id="bm-pin-4" class="bm-pin pin-empty"></div>
+      </div>
+      <button id="bm-add" class="chip bm-add">☆ 加入書籤</button>
+      <button id="bm-close" class="x" aria-label="隱藏書籤">✕</button>
+    </div>
+    <div class="panel-search bm-search-box"><svg class="ps-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="bm-search" type="search" placeholder="搜尋書籤" autocomplete="off" spellcheck="false" aria-label="搜尋書籤"></div>
+    <div id="bm-tree" class="bm-tree"></div>
+    <div id="bm-undo" class="bm-undo" role="status" hidden>
+      <span id="bm-undo-msg"></span>
+      <button id="bm-undo-btn" class="bm-undo-btn" type="button">復原</button>
+    </div>
+  </aside>
+
+  <!-- 加入／編輯書籤 -->
+  <dialog id="bm-dialog" class="bm-dialog">
+    <div class="m-head">
+      <h2 id="bm-d-title">加入書籤</h2>
+      <button id="bm-d-close" class="x" aria-label="關閉">✕</button>
+    </div>
+    <label class="field"><span>名稱</span><input id="bm-name" type="text" spellcheck="false" placeholder="書籤名稱"></label>
+    <label class="field"><span>網址</span><input id="bm-url" type="text" spellcheck="false" placeholder="https://"></label>
+    <div class="field">
+      <label for="bm-folder">資料夾</label>
+      <div class="folder-row">
+        <select id="bm-folder"></select>
+        <button id="bm-newfolder" class="btn" type="button">＋ 新資料夾</button>
+      </div>
+      <div id="bm-nf-row" hidden>
+        <div class="folder-row">
+          <input id="bm-nf-name" type="text" placeholder="新資料夾名稱" autocomplete="off">
+          <button id="bm-nf-ok" class="btn primary" type="button">建立</button>
+          <button id="bm-nf-cancel" class="btn" type="button">取消</button>
+        </div>
+        <div id="bm-nf-hint" class="nf-hint"></div>
+      </div>
+    </div>
+    <label id="bm-top-row" class="bm-top-row"><input id="bm-top" type="checkbox"> <span class="bm-top-label">加入到資料夾最上方</span></label>
+    <div id="bm-error" class="login-error"></div>
+    <div class="m-row">
+      <span><button id="bm-remove" class="btn" type="button" hidden>移除</button></span>
+      <span class="actions">
+        <button id="bm-cancel" class="btn" type="button">取消</button>
+        <button id="bm-save" class="btn primary" type="button">儲存</button>
+      </span>
+    </div>
+  </dialog>
+
+
+  <!-- 任務矩陣（緊急／重要） -->
+  <dialog id="quad" class="quad">
+    <div class="m-head">
+      <h2>任務矩陣</h2>
+      <span class="qd-hint">把待辦拖進象限，或直接在象限裡新增</span>
+      <span class="spacer"></span>
+      <button id="qd-close" class="x" aria-label="關閉">✕</button>
+    </div>
+    <div id="qd-unsorted-box" class="qd-unsorted-box">
+      <div class="qd-sub">未分類的待辦<span id="qd-unsorted-count"></span></div>
+      <ul id="qd-unsorted" class="qd-list qd-chips"></ul>
+    </div>
+    <div class="qd-grid">
+      <div></div><div class="qd-axis">緊急</div><div class="qd-axis">不緊急</div>
+      <div class="qd-axis qd-row">重要</div>
+      <section id="qd-box-1" class="qd-box q1"><header><b>重要且緊急</b><small>立即去做</small><span id="qd-count-1" class="qd-count"></span></header><ul id="qd-list-1" class="qd-list"></ul><input id="qd-add-1" class="qd-add" type="text" placeholder="＋ 新增，按 Enter" autocomplete="off"></section>
+      <section id="qd-box-2" class="qd-box q2"><header><b>重要不緊急</b><small>排時間做</small><span id="qd-count-2" class="qd-count"></span></header><ul id="qd-list-2" class="qd-list"></ul><input id="qd-add-2" class="qd-add" type="text" placeholder="＋ 新增，按 Enter" autocomplete="off"></section>
+      <div class="qd-axis qd-row">不重要</div>
+      <section id="qd-box-3" class="qd-box q3"><header><b>緊急不重要</b><small>盡快處理或交給別人</small><span id="qd-count-3" class="qd-count"></span></header><ul id="qd-list-3" class="qd-list"></ul><input id="qd-add-3" class="qd-add" type="text" placeholder="＋ 新增，按 Enter" autocomplete="off"></section>
+      <section id="qd-box-4" class="qd-box q4"><header><b>不緊急不重要</b><small>少做或刪除</small><span id="qd-count-4" class="qd-count"></span></header><ul id="qd-list-4" class="qd-list"></ul><input id="qd-add-4" class="qd-add" type="text" placeholder="＋ 新增，按 Enter" autocomplete="off"></section>
+    </div>
+  </dialog>
+
+  <!-- 收藏 -->
   <dialog id="manage">
     <div class="m-head">
       <h2>我的收藏</h2>
+      <button id="open-yt" class="yt-link" type="button" title="在新分頁打開 YouTube"><img id="yt-icon" alt=""><span>YouTube</span></button>
+      <span class="spacer"></span>
       <button id="close-manage" class="x" aria-label="關閉">✕</button>
     </div>
 
     <section class="yt">
       <h3>YouTube 帳號</h3>
       <div id="yt-off" hidden>
-        <p class="note">登入後會自動載入你按讚的影片與播放清單，每天自動同步。</p>
+        <p class="note">登入後，可以選擇哪些播放清單要自動同步載入。</p>
         <button class="gbtn gbtn-md js-login"><img class="g-logo" src="https://developers.google.com/identity/images/g-logo.png" alt=""><span>Continue with Google</span></button>
       </div>
       <div id="yt-on" hidden>
         <div id="yt-who" class="who"></div>
-        <div class="note">要從哪些清單隨機挑影片？</div>
+        <div class="note">勾選要自動同步載入的播放清單（立即同步）</div>
         <div id="yt-sources" class="sources"></div>
         <div class="m-row">
           <span id="yt-status" class="msg"></span>
@@ -91,6 +333,7 @@
         <button id="add" class="btn primary">加入</button>
       </span>
     </div>
+    <div class="panel-search fav-search"><svg class="ps-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="fav-search" type="search" placeholder="搜尋影片（標題、頻道）" autocomplete="off" spellcheck="false" aria-label="搜尋影片"><span id="fav-count" class="fav-count"></span></div>
     <ul id="list" class="list"></ul>
   </dialog>
 

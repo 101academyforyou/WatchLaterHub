@@ -23,6 +23,3 @@ pub const DEFAULT_VIDEOS: &[(&str, &str, &str)] = &[
 
 /// 每個來源（喜歡的影片／播放清單）最多同步幾部
 pub const MAX_PER_SOURCE: usize = 1000;
-
-/// 自動同步間隔（分鐘）。API 配額由所有使用者共用，所以設為一天一次。
-pub const SYNC_EVERY_MIN: f64 = 1440.0;

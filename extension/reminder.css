@@ -1,0 +1,18 @@
+/* 提醒小視窗 */
+body.reminder {
+  min-height: 100vh; margin: 0; padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 10px;
+}
+.r-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.r-bell { font-size: 20px; display: inline-block; animation: ring 1s ease-in-out 3; transform-origin: 50% 10%; }
+@keyframes ring { 0%,100% { transform: rotate(0); } 20% { transform: rotate(18deg); } 40% { transform: rotate(-16deg); } 60% { transform: rotate(10deg); } 80% { transform: rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce) { .r-bell { animation: none; } }
+#r-main { display: flex; flex-direction: column; gap: 10px; }
+.r-text { font-size: 20px; font-weight: 600; line-height: 1.4; word-break: break-word; max-height: 5.6em; overflow: auto; }
+.r-when { font-size: 13px; color: var(--muted); }
+.r-done { height: 40px; font-size: 15px; margin-top: 4px; }
+.r-later { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.r-later .chip { padding: 6px 12px; }
+.r-gone { flex: 1; display: flex; align-items: center; color: var(--muted); font-size: 14px; }
+.r-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.chip:disabled, .btn:disabled { opacity: .5; cursor: default; }
+.r-foot:has(#r-open[hidden]) { justify-content: flex-end; }

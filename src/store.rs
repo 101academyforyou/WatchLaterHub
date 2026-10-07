@@ -2,7 +2,7 @@
 
 use crate::chrome::{self, to_js};
 use crate::config;
-use crate::videos::{dedupe, parse_id, query, Video};
+use crate::videos::{dedupe, move_by_key, parse_id, query, Video};
 
 pub const KEY: &str = "videos"; // 手動加入（含預設影片）
 pub const YT_KEY: &str = "ytVideos"; // 從 YouTube 帳號同步
@@ -11,8 +11,25 @@ pub async fn get_manual() -> Vec<Video> {
     chrome::get_or(KEY, vec![]).await
 }
 
+/// 使用者在清單按 ✕ 拿掉的同步影片（下次同步也不會再出現）
+pub const YT_HIDDEN_KEY: &str = "ytHidden";
+
 pub async fn get_synced() -> Vec<Video> {
-    chrome::get_or(YT_KEY, vec![]).await
+    let list: Vec<Video> = chrome::get_or(YT_KEY, vec![]).await;
+    let hidden: Vec<String> = chrome::get_or(YT_HIDDEN_KEY, vec![]).await;
+    list.into_iter().filter(|v| !hidden.contains(&v.id)).collect()
+}
+
+/// 拿掉一部同步來的影片
+pub async fn hide_synced(id: &str) {
+    let mut hidden: Vec<String> = chrome::get_or(YT_HIDDEN_KEY, vec![]).await;
+    if !hidden.iter().any(|h| h == id) {
+        hidden.push(id.to_string());
+        // 只留最近的 2000 筆
+        let extra = hidden.len().saturating_sub(2000);
+        hidden.drain(..extra);
+        chrome::set(&[(YT_HIDDEN_KEY, to_js(&hidden))]).await;
+    }
 }
 
 /// 手動 + YouTube 同步，去除重複
@@ -64,6 +81,14 @@ pub async fn add_many_known(texts: &[String], known: &[Video]) -> (usize, usize)
     }
     save_manual(&list).await;
     (ids.len(), texts.len() - ids.len())
+}
+
+/// 拖曳排序手動加入的影片
+pub async fn reorder(from: &str, to: &str, after: bool) {
+    let mut list = get_manual().await;
+    if move_by_key(&mut list, |v| v.id.as_str(), from, to, after) {
+        save_manual(&list).await;
+    }
 }
 
 pub async fn remove(id: &str) {

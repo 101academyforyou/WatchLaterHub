@@ -11,3 +11,7 @@ chrome.alarms.onAlarm.addListener((a) => run(() => wlh.on_alarm(a.name)));
 chrome.contextMenus.onClicked.addListener((info, tab) =>
   run(() => wlh.on_context_menu(String(info.menuItemId), info.linkUrl || "", info.pageUrl || tab?.url || ""))
 );
+// TODO 提醒：清單一改就重設鬧鐘（時間到由 on_alarm 跳出提醒小視窗）
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.todos) run(() => wlh.on_todos_changed());
+});
