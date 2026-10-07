@@ -48,7 +48,7 @@ fn on_context_edit(e: &Element, n: &BookmarkNode) {
             return;
         }
         let win = web_sys::window().unwrap();
-        if let Ok(Some(t)) = win.prompt_with_message_and_default("資料夾名稱", &node.title) {
+        if let Ok(Some(t)) = win.prompt_with_message_and_default(&crate::i18n::tr("資料夾名稱"), &node.title) {
             let t = t.trim().to_string();
             if !t.is_empty() && t != node.title {
                 spawn(async move {

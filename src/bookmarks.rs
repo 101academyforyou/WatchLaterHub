@@ -316,7 +316,7 @@ pub(crate) fn link_anchor(url: &str, label: &str) -> Element {
     let (url, label) = (url.to_string(), label.to_string());
     let a: HtmlAnchorElement = doc().create_element("a").unwrap().unchecked_into();
     a.set_class_name("bm-item");
-    a.set_inner_html(r#"<img alt=""><span></span>"#);
+    a.set_inner_html(r#"<img alt=""><span data-nt></span>"#);
     a.query_selector("span").unwrap().unwrap().set_text_content(Some(&label));
     let img: HtmlImageElement = a.query_selector("img").unwrap().unwrap().unchecked_into();
     img.set_src(&chrome::favicon_url(&url));

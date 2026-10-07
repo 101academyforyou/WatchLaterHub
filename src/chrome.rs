@@ -26,6 +26,8 @@ extern "C" {
     // chrome.contextMenus / chrome.alarms
     #[wasm_bindgen(js_namespace = ["chrome", "contextMenus"], js_name = create)]
     fn context_menus_create_raw(props: JsValue);
+    #[wasm_bindgen(js_namespace = ["chrome", "contextMenus"], js_name = update)]
+    fn context_menus_update_raw(id: &str, props: JsValue);
     #[wasm_bindgen(js_namespace = ["chrome", "alarms"], js_name = create)]
     fn alarms_create_raw(name: &str, info: JsValue);
     #[wasm_bindgen(js_namespace = ["chrome", "alarms"], js_name = clear, catch)]
@@ -177,6 +179,30 @@ pub fn context_menu(id: &str, title: &str, contexts: &str, pattern_key: &str, pa
     context_menus_create_raw(to_js(&serde_json::json!({
         "id": id, "title": title, "contexts": [contexts], pattern_key: patterns
     })));
+}
+
+/// 右鍵選單的 (id, 中文名稱)
+pub const MENUS: [(&str, &str); 2] = [("fav-page", "加入 WatchLaterHub"), ("fav-link", "把這部影片加入 WatchLaterHub")];
+
+/// 切換語言後更新右鍵選單的文字
+pub fn update_context_menus() {
+    for (id, title) in MENUS {
+        context_menus_update_raw(id, to_js(&serde_json::json!({ "title": crate::i18n::tr(title) })));
+    }
+}
+
+/// 背景頁用：讀語言設定（沒設定過就看瀏覽器語言）
+pub async fn load_lang_en() -> bool {
+    match get::<String>(crate::i18n::LANG_KEY).await.as_deref() {
+        Some("en") => true,
+        Some("zh") => false,
+        _ => {
+            // service worker 沒有 window，從全域的 navigator 讀
+            let nav = Reflect::get(&js_sys::global(), &"navigator".into()).unwrap_or(JsValue::NULL);
+            let lang = Reflect::get(&nav, &"language".into()).ok().and_then(|v| v.as_string()).unwrap_or_default();
+            !lang.to_lowercase().starts_with("zh")
+        }
+    }
 }
 
 /// 單次鬧鐘：在 `when`（毫秒時間戳）響

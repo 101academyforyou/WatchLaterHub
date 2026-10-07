@@ -549,7 +549,7 @@ mod view {
         match chrome::current_position().await {
             Some((lat, lon)) => {
                 let url = format!(
-                    "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat:.4}&longitude={lon:.4}&localityLanguage=zh-Hant"
+                    "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat:.4}&longitude={lon:.4}&localityLanguage={}", if crate::i18n::is_en() { "en" } else { "zh-Hant" }
                 );
                 let name = match chrome::fetch(&url, None, "GET").await {
                     Ok(r) if r.status < 400 => place_name(&r.json),
@@ -625,8 +625,9 @@ mod view {
         // Open-Meteo（多試幾種寫法）＋ OpenStreetMap，一起查
         let mut lists = vec![];
         let osm = format!(
-            "https://nominatim.openstreetmap.org/search?q={}&format=json&limit=15&addressdetails=1&accept-language=zh-TW",
-            js_sys::encode_uri_component(&q)
+            "https://nominatim.openstreetmap.org/search?q={}&format=json&limit=15&addressdetails=1&accept-language={}",
+            js_sys::encode_uri_component(&q),
+            if crate::i18n::is_en() { "en" } else { "zh-TW" }
         );
         if let Ok(r) = chrome::fetch(&osm, None, "GET").await {
             if r.status < 400 {
@@ -635,8 +636,9 @@ mod view {
         }
         for v in query_variants(&q) {
             let url = format!(
-                "https://geocoding-api.open-meteo.com/v1/search?name={}&count=8&language=zh&format=json",
-                js_sys::encode_uri_component(&v)
+                "https://geocoding-api.open-meteo.com/v1/search?name={}&count=8&language={}&format=json",
+                js_sys::encode_uri_component(&v),
+                if crate::i18n::is_en() { "en" } else { "zh" }
             );
             if let Ok(r) = chrome::fetch(&url, None, "GET").await {
                 lists.push(places_open_meteo(&r.json));

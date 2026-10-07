@@ -423,7 +423,7 @@ mod view {
         let _ = b.set_attribute("role", "button");
         let _ = b.set_attribute("tabindex", "0");
         let _ = b.set_attribute("title", &format!("{}\n{}", a.name, if a.kind == "url" { a.target.as_str() } else { "電腦上的軟體" }));
-        b.set_inner_html(r#"<span class="app-ico"></span><span class="app-name"></span><button class="bm-del" type="button" title="移除">✕</button>"#);
+        b.set_inner_html(r#"<span class="app-ico"></span><span class="app-name" data-nt></span><button class="bm-del" type="button" title="移除">✕</button>"#);
         fill_icon(&b.query_selector(".app-ico").unwrap().unwrap(), a);
         b.query_selector(".app-name").unwrap().unwrap().set_text_content(Some(&a.name));
         let item = a.clone();

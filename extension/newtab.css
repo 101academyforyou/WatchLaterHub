@@ -46,6 +46,7 @@ body {
 }
 .chip:hover { filter: brightness(.96); }
 #count { color: var(--muted); }
+.lang-chip { min-width: 44px; font-weight: 500; }
 
 /* 頂列左側的書籤列：放不下的項目換到看不見的第二行，收進「»」 */
 .bbar {
@@ -604,6 +605,7 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 .qd-grid { display: grid; grid-template-columns: 28px 1fr 1fr; grid-template-rows: auto 1fr 1fr; gap: 8px; margin-top: 12px; }
 .qd-axis { font-size: 13px; font-weight: 600; color: var(--muted); text-align: center; }
 .qd-row { writing-mode: vertical-rl; display: flex; align-items: center; justify-content: center; letter-spacing: 4px; }
+:root[lang="en"] .qd-row { letter-spacing: normal; transform: rotate(180deg); }
 .qd-box { display: flex; flex-direction: column; min-height: 190px; max-height: 34vh; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); }
 .qd-box header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
 .qd-box header b { font-size: 14px; }

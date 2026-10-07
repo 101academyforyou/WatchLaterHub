@@ -426,7 +426,7 @@ pub(crate) mod view {
         let li = doc().create_element("li").unwrap();
         li.set_class_name(if t.done { "todo-item done" } else { "todo-item" });
         li.set_inner_html(
-            r#"<input type="checkbox"><div class="todo-body"><span class="todo-text" title="點兩下編輯"></span></div><span class="todo-prios" role="radiogroup" aria-label="優先順序"></span><button class="todo-note" type="button" title="筆記與圖片">📝</button><button class="todo-alarm" type="button" title="設定提醒時間">⏰</button><button class="bm-del" type="button" title="刪除">✕</button>"#,
+            r#"<input type="checkbox"><div class="todo-body"><span class="todo-text" title="點兩下編輯" data-nt></span></div><span class="todo-prios" role="radiogroup" aria-label="優先順序"></span><button class="todo-note" type="button" title="筆記與圖片">📝</button><button class="todo-alarm" type="button" title="設定提醒時間">⏰</button><button class="bm-del" type="button" title="刪除">✕</button>"#,
         );
         // 優先順序：三個圓點直接排在 ⏰ 左邊，點一下選定，再點一次取消
         {
@@ -546,7 +546,7 @@ pub(crate) mod view {
     fn matrix_item(t: &Todo) -> Element {
         let li = doc().create_element("li").unwrap();
         li.set_class_name(if t.done { "qd-item done" } else { "qd-item" });
-        li.set_inner_html(r#"<input type="checkbox"><span class="qd-text"></span><button class="bm-del" type="button">✕</button>"#);
+        li.set_inner_html(r#"<input type="checkbox"><span class="qd-text" data-nt></span><button class="bm-del" type="button">✕</button>"#);
         let cb: HtmlInputElement = li.query_selector("input").unwrap().unwrap().unchecked_into();
         cb.set_checked(t.done);
         let _ = cb.set_attribute("aria-label", &format!("完成：{}", t.text));

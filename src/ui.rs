@@ -62,7 +62,7 @@ pub(crate) fn on_click(id: &str, f: impl Fn() + 'static) {
     listen(&el(id), "click", move |_| f());
 }
 fn confirm(msg: &str) -> bool {
-    web_sys::window().unwrap().confirm_with_message(msg).unwrap_or(false)
+    web_sys::window().unwrap().confirm_with_message(&crate::i18n::tr(msg)).unwrap_or(false)
 }
 fn input_value(id: &str) -> String {
     by_id::<HtmlInputElement>(id).value()
@@ -91,7 +91,18 @@ pub(crate) fn close_panels_except(keep: &str) {
 
 /// 讓使用者下載一個文字檔
 pub(crate) fn download_text(filename: &str, content: &str, mime: &str) {
-    let parts = js_sys::Array::of1(&JsValue::from_str(content));
+    // 英文模式：CSV 的標題列與固定的值（已完成、高優先…）換成英文；使用者寫的內容不動
+    let content = if crate::i18n::is_en() && mime.starts_with("text/csv") {
+        content
+            .split("\r\n")
+            .map(|line| line.split(',').map(|c| if c.starts_with('"') { c.to_string() } else { exact_tr(c) }).collect::<Vec<_>>().join(","))
+            .collect::<Vec<_>>()
+            .join("\r\n")
+    } else {
+        content.to_string()
+    };
+    let filename = &crate::i18n::tr(filename);
+    let parts = js_sys::Array::of1(&JsValue::from_str(&content));
     let opts = web_sys::BlobPropertyBag::new();
     opts.set_type(mime);
     let Ok(blob) = web_sys::Blob::new_with_str_sequence_and_options(&parts, &opts) else { return };
@@ -103,6 +114,14 @@ pub(crate) fn download_text(filename: &str, content: &str, mime: &str) {
     timeout(1000, move || {
         let _ = web_sys::Url::revoke_object_url(&url);
     });
+}
+
+/// CSV 用：只換整格完全相同的固定文字（開頭的 BOM 保留）
+fn exact_tr(cell: &str) -> String {
+    match cell.strip_prefix('\u{feff}') {
+        Some(rest) => format!("\u{feff}{}", crate::i18n::exact_only(rest)),
+        None => crate::i18n::exact_only(cell),
+    }
 }
 
 // ---------- 清單裡的搜尋框（TODO、書籤、最近共用） ----------
@@ -312,7 +331,7 @@ async fn render_list() {
     }
     for (v, is_synced) in shown {
         let li: Element = doc().create_element("li").unwrap();
-        li.set_inner_html(r#"<img alt="" draggable="false"><a target="_blank" rel="noopener" draggable="false"></a><button class="x" title="移除">✕</button>"#);
+        li.set_inner_html(r#"<img alt="" draggable="false"><a target="_blank" rel="noopener" draggable="false" data-nt></a><button class="x" title="移除">✕</button>"#);
         if is_synced {
             // 同步來的影片：標示來源，不能拖曳排序
             let _ = li.class_list().add_1("synced");
@@ -501,6 +520,7 @@ async fn fetch_playlist() {
 // ---------- 啟動 ----------
 
 pub fn start() {
+    crate::i18n::page::init();
     // 圖片載入失敗時隱藏破圖示，成功時再顯示
     let d: web_sys::EventTarget = doc().into();
     for (ev, vis) in [("error", "hidden"), ("load", "")] {

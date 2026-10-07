@@ -62,6 +62,7 @@ fn start_timer_mode(seconds: &str) {
 }
 
 pub fn start() {
+    crate::i18n::page::init();
     let w = web_sys::window().unwrap();
     if let Some(m) = web_sys::UrlSearchParams::new_with_str(&w.location().search().unwrap_or_default())
         .ok()
