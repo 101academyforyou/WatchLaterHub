@@ -133,6 +133,46 @@ pub async fn fetch_watch_later() -> R<Vec<Video>> {
     fetch_list(WATCH_LATER_ID, |_| {}).await
 }
 
+/// 「稍後觀看」有幾部（讀清單頁面標題列的「N 部影片」；讀不到時回傳 None）
+pub async fn watch_later_count() -> Option<u64> {
+    let page = format!("https://www.youtube.com/playlist?list={WATCH_LATER_ID}&hl=zh-TW");
+    let (status, html) = chrome::fetch_text(&page, "GET", None, &[]).await.ok()?;
+    if status >= 400 || !html.contains("\"LOGGED_IN\":true") {
+        return None;
+    }
+    let data = extract_json_after(&html, "ytInitialData = ").or_else(|| extract_json_after(&html, "ytInitialData\"] = "))?;
+    // 先找標題列，找不到再找整頁
+    find_count(&data["header"]).or_else(|| find_count(&data))
+}
+
+/// 從清單頁面 JSON 找出「N 部影片」／「沒有影片」
+pub fn find_count(v: &Value) -> Option<u64> {
+    match v {
+        Value::String(t) => parse_count(t),
+        Value::Object(m) => {
+            // 標題列的文字可能拆成好幾段 runs（「12」「 部影片」）
+            if let Some(t) = text_of(v).filter(|_| m.contains_key("runs")) {
+                if let Some(n) = parse_count(&t) {
+                    return Some(n);
+                }
+            }
+            m.values().find_map(find_count)
+        }
+        Value::Array(a) => a.iter().find_map(find_count),
+        _ => None,
+    }
+}
+
+/// 「1,234 部影片」→ 1234；「沒有影片」→ 0
+pub fn parse_count(t: &str) -> Option<u64> {
+    let t = t.trim();
+    if t == "沒有影片" {
+        return Some(0);
+    }
+    let num = t.strip_suffix("部影片")?.trim().replace(',', "");
+    (!num.is_empty() && num.chars().all(|c| c.is_ascii_digit())).then(|| num.parse().ok()).flatten()
+}
+
 /// 私人清單（稍後觀看）翻頁時要附上的登入驗證標頭；沒登入 YouTube 時回傳空的
 async fn auth_headers(html: &str) -> Vec<(String, String)> {
     const ORIGIN: &str = "https://www.youtube.com";
@@ -280,6 +320,21 @@ mod tests {
             sapisid_hash(1700000000, "abc", "https://www.youtube.com"),
             format!("SAPISIDHASH 1700000000_{}", sha1_hex(b"1700000000 abc https://www.youtube.com"))
         );
+    }
+
+    #[test]
+    fn finds_video_count() {
+        assert_eq!(parse_count("1,234 部影片"), Some(1234));
+        assert_eq!(parse_count("沒有影片"), Some(0));
+        assert_eq!(parse_count("部影片"), None);
+        assert_eq!(parse_count("觀看次數：12 次"), None);
+        let old = json!({"header": {"playlistHeaderRenderer": {"title": {"simpleText": "稍後觀看"},
+            "numVideosText": {"runs": [{"text": "57"}, {"text": " 部影片"}]}}}});
+        assert_eq!(find_count(&old), Some(57));
+        let new = json!({"header": {"pageHeaderViewModel": {"metadata": {"contentMetadataViewModel": {"metadataRows": [
+            {"metadataParts": [{"text": {"content": "我"}}, {"text": {"content": "8 部影片"}}]}]}}}}});
+        assert_eq!(find_count(&new), Some(8));
+        assert_eq!(find_count(&json!({"a": "沒有東西"})), None);
     }
 
     #[test]
