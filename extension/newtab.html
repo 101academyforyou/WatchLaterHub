@@ -8,10 +8,13 @@
   <link rel="stylesheet" href="newtab.css">
 </head>
 <body>
+  <div id="bb-menu" class="bb-menu" hidden></div>
   <div class="topbar">
+    <nav id="bbar" class="bbar" aria-label="書籤列"></nav>
+    <button id="bbar-more" class="bb-item bb-more" type="button" title="其他書籤列項目" aria-label="其他書籤列項目" hidden>»</button>
     <button id="open-manage" class="chip">☰ 收藏 <span id="count"></span></button>
     <button id="todo-toggle" class="chip" aria-controls="todo" aria-expanded="false" title="待辦清單">✓ TODO <span id="todo-count" class="cnt"></span></button>
-    <button id="apps-toggle" class="chip" aria-controls="apps" aria-expanded="false" title="開啟電腦上的軟體">⏺︎ 開啟</button>
+    <button id="apps-toggle" class="chip" aria-controls="apps" aria-expanded="false" title="開啟電腦上的軟體">⏺︎ 工具</button>
     <button id="bm-toggle" class="chip" aria-controls="bm" title="顯示／隱藏書籤">★ 書籤</button>
     <button id="recent-toggle" class="chip" aria-controls="recent" aria-expanded="false" title="最近瀏覽"><svg class="drop" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c-.3 0-.6.15-.78.4C9.6 5.1 5.5 10.6 5.5 14.5a6.5 6.5 0 0 0 13 0c0-3.9-4.1-9.4-5.72-11.6A.97.97 0 0 0 12 2.5z"/></svg> 最近</button>
     <button id="avatar" class="avatar" hidden title="YouTube 帳號"><img alt=""></button>
@@ -157,9 +160,9 @@
   </section>
 
   <!-- 開啟：電腦上的軟體 -->
-  <section id="apps" class="todo apps" hidden aria-label="開啟軟體">
+  <section id="apps" class="todo apps" hidden aria-label="工具">
     <div class="bm-head">
-      <h2>開啟</h2>
+      <h2>工具</h2>
       <span class="spacer"></span>
       <div class="bm-pins" aria-label="常用軟體">
         <div id="app-pin-0" class="bm-pin app-pin pin-empty"></div>

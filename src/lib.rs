@@ -12,6 +12,7 @@ pub mod videos;
 pub mod weather;
 
 mod apps;
+mod bookbar;
 mod bookmarks;
 mod chrome;
 mod drag;

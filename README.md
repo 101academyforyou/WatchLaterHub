@@ -16,7 +16,8 @@ Chrome 新分頁：Google 風格搜尋框，上方隨機顯示一部你在 YouTu
 - 收藏、TODO、書籤、最近一次只會開一個：打開其中一個，其他的自動關閉
 - **搜尋**：TODO、書籤、最近都有搜尋框，打字即時篩選（多個關鍵字以空白分隔），Esc 清空
 - **最近**：頂列「💧 最近」列出最近瀏覽的網頁（來自 Chrome 瀏覽紀錄，最多 30 筆；「今天／昨天／前天／本週／自訂（24 小時制，可選到分鐘）」可篩選期間，只列出在那段時間內真的瀏覽過的網頁），可點開、拖曳排序、☆ 加入書籤（已是書籤顯示 ★）、✕ 從清單移除（不會刪除瀏覽紀錄）
-- **開啟**：頂列「⏺︎ 開啟」加入電腦上的軟體，點一下就開啟（需安裝一次電腦小幫手，見下方）；快速加入 Claude、ChatGPT、Gemini、VS Code、Obsidian、Notion、Discord、Slack、Google Meet、Zoom、Teams、Spotify（有裝桌面版就開桌面版，否則用專屬網址或網頁）；搜尋框可找電腦上的其他軟體
+- **書籤列**：頂列左側跟 Chrome 一樣顯示書籤列的書籤，資料夾點開是下拉選單（可一層層點進子資料夾），放不下的收進「»」
+- **工具**：頂列「⏺︎ 工具」加入電腦上的軟體，點一下就開啟（需安裝一次電腦小幫手，見下方）；快速加入 Claude、ChatGPT、Gemini、VS Code、Obsidian、Notion、Discord、Slack、Google Meet、Zoom、Teams、Spotify（有裝桌面版就開桌面版，否則用專屬網址或網頁）；搜尋框可找電腦上的其他軟體
 - **右側書籤面板**：標題旁有 5 個釘選格，把書籤拖上去即可釘選、點一下開啟、✕ 取消；顯示 Chrome 書籤（書籤列、其他書籤…，資料夾可展開收合並記住狀態），在任何地方新增／修改書籤都會即時更新；右上「★ 書籤」可開關
 - 書籤面板的「☆ 加入書籤」：開啟視窗輸入名稱、網址、選資料夾（可「＋ 新資料夾」直接建立）後儲存（預先填入目前這部影片；這部影片已在書籤裡時變成編輯／移除）
 - 每個書籤右方的 ✎ 可直接編輯名稱、網址與資料夾；✕ 可直接移除，6 秒內可按「復原」
@@ -55,12 +56,13 @@ src/
   videos.rs    純邏輯（網址解析、去重、隨機、OAuth 解析），有單元測試
   store.rs     收藏清單（chrome.storage）
   bookmarks.rs 右側書籤面板（chrome.bookmarks）
+  bookbar.rs   頂列左側的書籤列
   todo.rs      TODO 清單（純邏輯有單元測試）
   weather.rs   TODO 標題列的日期與天氣卡片（有單元測試）
   timer.rs     倒數計時與碼表（有單元測試）
   recent.rs    「最近」瀏覽清單（純邏輯有單元測試）
   drag.rs      拖曳排序共用工具
-  apps.rs      「開啟」電腦上的軟體（有單元測試）
+  apps.rs      「工具」：開啟電腦上的軟體（有單元測試）
 launcher/      電腦小幫手（Native Messaging host，獨立的 Rust 專案，有單元測試）
 install-launcher.sh  安裝小幫手
   reminder_page.rs  TODO 提醒小視窗（extension/reminder.html）

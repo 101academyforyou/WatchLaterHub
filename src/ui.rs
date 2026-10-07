@@ -43,7 +43,7 @@ pub(crate) fn text(id: &str, s: &str) {
 pub(crate) fn hide(id: &str, hidden: bool) {
     el(id).set_hidden(hidden);
 }
-fn all(sel: &str) -> Vec<HtmlElement> {
+pub(crate) fn all(sel: &str) -> Vec<HtmlElement> {
     let list = doc().query_selector_all(sel).unwrap();
     (0..list.length()).filter_map(|i| list.item(i)).map(|n| n.unchecked_into()).collect()
 }
@@ -521,6 +521,7 @@ pub fn start() {
 
     // 右側書籤
     crate::bookmarks::start();
+    crate::bookbar::start();
     crate::todo::start();
     crate::recent::start();
     crate::apps::start();
