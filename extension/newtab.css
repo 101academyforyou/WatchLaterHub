@@ -411,14 +411,35 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 
 /* 最近瀏覽（和 TODO 一樣從頂列往下展開） */
 #recent-toggle.on { background: color-mix(in srgb, var(--accent) 16%, var(--pill)); }
-.recent { right: 16px; width: min(420px, calc(100vw - 32px)); }
+/* 最近：版面跟右側書籤面板一樣 */
+.todo.recent {
+  top: 64px; right: 16px; bottom: 16px; width: 420px; max-height: none; z-index: 5;
+  border-radius: 16px; box-shadow: none;
+}
+@media (max-width: 1400px) {
+  body:has(#recent:not([hidden])) main { padding-right: 452px; }
+}
+@media (max-width: 900px) {
+  .todo.recent { top: auto; height: 50vh; left: 16px; right: 16px; width: auto; box-shadow: var(--shadow); }
+  body:has(#recent:not([hidden])) main { padding-right: 16px; padding-bottom: calc(50vh + 32px); }
+}
 .recent .bm-head h2 { flex: 1; }
-.recent-list { padding-top: 6px; }
-.recent-row { list-style: none; padding-left: 4px; }
-.recent-row .bm-item { align-items: center; padding: 6px 8px; }
+.recent-list { padding: 6px 6px 12px; font-size: 13px; }
+.recent-row { list-style: none; }
+.recent-row .bm-item { flex: 1; min-width: 0; }
 .recent-row .bm-item > span { flex: 1; }
-.recent-meta { flex: none; max-width: 40%; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.recent-row:hover .grip { opacity: 1; }
+.recent-when { flex: none; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.recent-row:hover .recent-when, .recent-row:focus-within .recent-when { display: none; }
+/* 平常只顯示時間；滑鼠移上去才換成 ✎ ☆ ✕（不佔位置） */
+.recent-row:not(:hover):not(:focus-within) .bm-del,
+.recent-row:not(:hover):not(:focus-within) .recent-star { display: none; }
+@media (hover: none) { .recent-when { display: none; } .recent-row .bm-del, .recent-row .recent-star { display: inline-block !important; } }
+.recent-row .bm-edit { margin-right: 0; font-size: 13px; }
+.recent-edit {
+  flex: 1; min-width: 0; height: 30px; margin: 1px 4px 1px 2px; padding: 0 8px; font: inherit; font-size: 13px; color: var(--fg);
+  border: 0; border-radius: 6px; outline: 2px solid var(--accent); background: var(--bg);
+}
+.recent-row.editing .recent-star, .recent-row.editing .bm-del { display: none; }
 
 /* 清單裡的搜尋框 */
 .panel-search {
@@ -429,7 +450,7 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 .panel-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--fg); font: inherit; font-size: 13px; }
 .ps-icon { width: 16px; height: 16px; fill: var(--muted); flex: none; }
 .bm-search-box { margin: 10px 10px 4px; }
-.recent .panel-search { margin-top: 10px; }
+.recent .panel-search { margin: 10px 10px 4px; }
 
 /* 「最近」按鈕的黑色水滴 */
 .drop { width: 13px; height: 13px; fill: currentColor; vertical-align: -1px; }
@@ -461,7 +482,7 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 }
 .recent-row:hover .recent-star, .recent-star:focus-visible { opacity: 1; }
 .recent-star:hover { background: var(--line); color: var(--fg); }
-.recent-star.on { opacity: 1; color: var(--fg); }
+.recent-star.on { color: var(--fg); }
 .recent-row .bm-del { margin-left: -4px; }
 @media (hover: none) { .recent-star { opacity: 1; } }
 

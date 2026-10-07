@@ -8,6 +8,31 @@ use serde::{Deserialize, Serialize};
 pub const KEY: &str = "recent";
 pub const SYNC_KEY: &str = "recentSyncedAt";
 pub const REMOVED_KEY: &str = "recentRemoved";
+/// 使用者自己改的名稱：(網址, 名稱)。之後重新瀏覽也保留
+pub const TITLES_KEY: &str = "recentTitles";
+
+pub type Titles = Vec<(String, String)>;
+
+/// 改名稱；改成空白或跟原本一樣 = 恢復原本的網頁標題
+pub fn set_custom_title(titles: &mut Titles, url: &str, title: &str, original: &str) {
+    titles.retain(|(u, _)| u != url);
+    let t = title.trim();
+    if !t.is_empty() && t != original.trim() {
+        titles.push((url.to_string(), t.to_string()));
+    }
+    let n = titles.len();
+    if n > 2000 {
+        titles.drain(..n - 2000);
+    }
+}
+
+/// 顯示用的名稱：自己改過的 > 網頁標題 > 網址
+pub fn label_of<'a>(titles: &'a Titles, r: &'a Recent) -> &'a str {
+    if let Some((_, t)) = titles.iter().find(|(u, _)| u == &r.url) {
+        return t;
+    }
+    if r.title.trim().is_empty() { &r.url } else { &r.title }
+}
 pub const MAX: usize = 30;
 
 /// 使用者移除過的網頁：(網址, 當時的瀏覽時間)。之後重新瀏覽（時間更新）才會再出現
@@ -288,6 +313,7 @@ mod view {
     /// 重畫（先查哪些已經是書籤）
     async fn render_async(list: Vec<Recent>) {
         let marked = crate::bookmarks::all_urls().await;
+        let titles: Titles = chrome::get_or(TITLES_KEY, vec![]).await;
         // 有選期間：直接查那段時間的瀏覽紀錄
         let list = match filter() {
             Some((_, start, end)) => {
@@ -315,10 +341,59 @@ mod view {
         if filter().is_some() {
             SHOWN.with(|x| *x.borrow_mut() = list.clone());
         }
-        render(&list, &marked);
+        render(&list, &marked, &titles);
     }
 
-    fn render(list: &[Recent], marked: &std::collections::HashSet<String>) {
+    /// ✎：名稱原地變成輸入框；Enter 或離開儲存、Esc 取消
+    fn start_edit(li: &web_sys::Element, r: Recent, current: String) {
+        let Some(a) = li.query_selector(".bm-item").ok().flatten() else { return };
+        let inp: web_sys::HtmlInputElement = doc().create_element("input").unwrap().unchecked_into();
+        inp.set_class_name("recent-edit");
+        inp.set_value(&current);
+        let _ = inp.set_attribute("aria-label", "名稱");
+        let _ = li.set_attribute("draggable", "false"); // 編輯時暫停拖曳，才能選取文字
+        let _ = li.class_list().add_1("editing");
+        let _ = a.replace_with_with_node_1(&inp);
+        let _ = inp.focus();
+        inp.select();
+        let done = Rc::new(Cell::new(false));
+        let save = {
+            let (done, inp) = (done.clone(), inp.clone());
+            move || {
+                if done.replace(true) {
+                    return;
+                }
+                let (r, v) = (r.clone(), inp.value());
+                spawn(async move {
+                    let mut titles: Titles = chrome::get_or(TITLES_KEY, vec![]).await;
+                    set_custom_title(&mut titles, &r.url, &v, &r.title);
+                    chrome::set(&[(TITLES_KEY, to_js(&titles))]).await;
+                    render_async(load().await).await;
+                });
+            }
+        };
+        let save2 = save.clone();
+        listen(&inp, "keydown", move |e| {
+            let k: &KeyboardEvent = e.unchecked_ref();
+            if k.is_composing() {
+                return;
+            }
+            match k.key().as_str() {
+                "Enter" => save2(),
+                "Escape" => {
+                    e.stop_propagation(); // 不要順便關掉整個清單
+                    done.set(true);
+                    spawn(async { render_async(load().await).await });
+                }
+                _ => {}
+            }
+        });
+        listen(&inp, "blur", move |_| save());
+        // 輸入框裡的點擊不要觸發拖曳或開連結
+        listen(&inp, "mousedown", |e| e.stop_propagation());
+    }
+
+    fn render(list: &[Recent], marked: &std::collections::HashSet<String>, titles: &Titles) {
         let ul = el("recent-list");
         ul.set_inner_html("");
         let filtered = filter().is_some();
@@ -327,27 +402,43 @@ mod view {
             return;
         }
         let q = crate::ui::search_text("recent-search");
-        let shown: Vec<&Recent> = list.iter().filter(|r| crate::videos::matches(&q, &[&r.title, &r.url])).collect();
+        let shown: Vec<&Recent> = list.iter().filter(|r| crate::videos::matches(&q, &[label_of(titles, r), &r.title, &r.url])).collect();
         if shown.is_empty() {
             ul.set_inner_html(r#"<li class="todo-none">找不到符合的網頁</li>"#);
             return;
         }
         let now = chrome::now();
         for r in shown {
-            let label = if r.title.trim().is_empty() { r.url.as_str() } else { r.title.as_str() };
+            let label = label_of(titles, r);
             let li = doc().create_element("li").unwrap();
             li.set_class_name("bm-row recent-row");
-            if !filtered {
-                li.append_child(&crate::drag::grip()).unwrap();
-            }
+            // 跟書籤一樣：網站圖示 + 名稱，右邊淡淡的瀏覽時間（滑鼠移上去換成按鈕）
             let a = crate::bookmarks::link_anchor(&r.url, label);
-            let meta = doc().create_element("small").unwrap();
-            meta.set_class_name("recent-meta");
             let host = host_of(&r.url);
             let when = ago((now - r.at) / 60_000.0);
-            meta.set_text_content(Some(&if host.is_empty() { when } else { format!("{host} · {when}") }));
+            let _ = a.set_attribute("title", &format!("{label}\n{}\n{}", if host.is_empty() { &r.url } else { &host }, when));
+            let meta = doc().create_element("small").unwrap();
+            meta.set_class_name("recent-when");
+            meta.set_text_content(Some(&when));
             a.append_child(&meta).unwrap();
             li.append_child(&a).unwrap();
+
+            // ✎ 改名稱
+            let ed = doc().create_element("button").unwrap();
+            ed.set_class_name("bm-del bm-edit");
+            ed.set_text_content(Some("✎"));
+            let _ = ed.set_attribute("type", "button");
+            let _ = ed.set_attribute("title", "編輯名稱");
+            let _ = ed.set_attribute("aria-label", &format!("編輯名稱：{label}"));
+            {
+                let (li2, item, cur) = (li.clone(), (*r).clone(), label.to_string());
+                listen(&ed, "click", move |e| {
+                    e.prevent_default();
+                    e.stop_propagation();
+                    start_edit(&li2, item.clone(), cur.clone());
+                });
+            }
+            li.append_child(&ed).unwrap();
 
             // ☆ 加入書籤（已是書籤顯示 ★，點了可以編輯）
             let star = doc().create_element("button").unwrap();
@@ -519,6 +610,20 @@ pub use view::{close, start};
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn custom_titles() {
+        let page = r("https://a.com/", "原本的標題", 1.0);
+        let mut t: Titles = vec![];
+        assert_eq!(label_of(&t, &page), "原本的標題");
+        set_custom_title(&mut t, &page.url, "  我的名稱 ", &page.title);
+        assert_eq!(label_of(&t, &page), "我的名稱");
+        set_custom_title(&mut t, &page.url, "", &page.title);
+        assert!(t.is_empty());
+        set_custom_title(&mut t, &page.url, "原本的標題", &page.title);
+        assert!(t.is_empty());
+        assert_eq!(label_of(&t, &r("https://b.com/", " ", 1.0)), "https://b.com/");
+    }
 
     fn r(url: &str, title: &str, at: f64) -> Recent {
         Recent { url: url.into(), title: title.into(), at }

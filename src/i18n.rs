@@ -343,6 +343,7 @@ const EXACT: &[(&str, &str)] = &[
     ("‹ 上一層", "‹ Back"),
     ("（空的）", "(Empty)"),
     ("（右鍵編輯，可拖曳）", "(right-click to edit, drag to move)"),
+    ("編輯名稱", "Rename"),
     // 提醒小視窗
     ("⏰ TODO 提醒", "⏰ TODO reminder"),
     ("TODO 提醒", "TODO reminder"),
@@ -434,6 +435,7 @@ const PATTERNS: &[(&str, &str)] = &[
     ("讀不到書籤：{e}", "Couldn't read bookmarks: {e}"),
     ("取消釘選：{x}", "Unpin: {x}"),
     ("從最近移除：{x}", "Remove from recent: {x}"),
+    ("編輯名稱：{x}", "Rename: {x}"),
     ("{a}：{b}", "{a}: {b}"),
     // 工具
     ("已開啟「{x}」", "Opened “{x}”"),
