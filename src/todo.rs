@@ -35,15 +35,15 @@ pub struct Note {
     /// 舊版：另外列在下方的圖片（data: 網址）。打開時會搬進 `html`
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub images: Vec<String>,
-    /// 筆記內容（文字、圖片和 PDF 混排的 HTML：只有文字、換行、<img> 和檔案標籤）
+    /// 筆記內容（文字、圖片和附件混排的 HTML：只有文字、換行、<img> 和附件標籤）
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub html: String,
-    /// 筆記裡的檔案（PDF）id；檔案本身另外存在 `file_key(id)`，打字存檔時才不用每次重寫
+    /// 筆記裡的附件 id；檔案本身另外存在 `file_key(id)`，打字存檔時才不用每次重寫
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub files: Vec<String>,
 }
 
-/// 筆記裡的檔案（PDF）
+/// 筆記裡的附件（任何類型的檔案）
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct NoteFile {
     pub name: String,
@@ -74,11 +74,45 @@ pub fn size_label(bytes: f64) -> String {
     }
 }
 
-/// 筆記裡代表一個檔案的標籤（整塊不能編輯，點一下打開）
-pub fn file_chip(fid: &str, name: &str, bytes: f64) -> String {
+fn ext_of(name: &str) -> String {
+    name.rsplit_once('.').map(|(_, e)| e.to_lowercase()).unwrap_or_default()
+}
+
+/// 依檔案類型挑圖示
+pub fn file_icon(name: &str, mime: &str) -> &'static str {
+    let ext = ext_of(name);
+    match () {
+        _ if mime == "application/pdf" || ext == "pdf" => "📄",
+        _ if mime.starts_with("image/") => "🖼",
+        _ if mime.starts_with("video/") => "🎬",
+        _ if mime.starts_with("audio/") => "🎵",
+        _ if matches!(ext.as_str(), "zip" | "rar" | "7z" | "gz" | "tar" | "bz2" | "xz") => "🗜",
+        _ if matches!(ext.as_str(), "xls" | "xlsx" | "csv" | "numbers" | "ods") => "📊",
+        _ if matches!(ext.as_str(), "ppt" | "pptx" | "key" | "odp") => "📽",
+        _ if mime.starts_with("text/") || matches!(ext.as_str(), "doc" | "docx" | "pages" | "odt" | "rtf" | "md" | "txt") => "📝",
+        _ => "📎",
+    }
+}
+
+/// 瀏覽器能直接在分頁裡顯示的類型（其他類型點了改成下載）
+pub fn viewable(name: &str, mime: &str) -> bool {
+    mime == "application/pdf"
+        || mime == "application/json"
+        || ["text/", "image/", "video/", "audio/"].iter().any(|p| mime.starts_with(p))
+        || ext_of(name) == "pdf"
+}
+
+/// 可以直接放在筆記裡顯示的圖片格式（其他圖片當成附件）
+pub fn inline_image(mime: &str) -> bool {
+    matches!(mime, "image/png" | "image/jpeg" | "image/gif" | "image/webp" | "image/bmp" | "image/avif" | "image/svg+xml")
+}
+
+/// 筆記裡代表一個附件的標籤（整塊不能編輯，點一下打開或下載）
+pub fn file_chip(fid: &str, name: &str, bytes: f64, mime: &str) -> String {
     let fid: String = fid.chars().filter(|c| c.is_ascii_alphanumeric()).collect();
     format!(
-        r#"<span class="note-file" contenteditable="false" data-fid="{fid}"><span class="nf-ico">📄</span><span class="nf-name">{}</span><span class="nf-size">{}</span></span>"#,
+        r#"<span class="note-file" contenteditable="false" data-fid="{fid}"><span class="nf-ico">{}</span><span class="nf-name">{}</span><span class="nf-size">{}</span></span>"#,
+        file_icon(name, mime),
         esc_html(name),
         size_label(bytes)
     )
@@ -1093,9 +1127,14 @@ mod tests {
 
     #[test]
     fn note_files() {
-        let chip = file_chip("ab12", "報告<1>.pdf", 1_300_000.0);
-        assert!(chip.contains(r#"data-fid="ab12""#) && chip.contains("報告&lt;1&gt;.pdf") && chip.contains("1.2 MB"));
-        assert_eq!(fids_in(&format!("x{chip}y{}{chip}", file_chip("cd34", "b.pdf", 10.0))), vec!["ab12", "cd34"]);
+        let chip = file_chip("ab12", "報告<1>.pdf", 1_300_000.0, "application/pdf");
+        assert!(chip.contains(r#"data-fid="ab12""#) && chip.contains("報告&lt;1&gt;.pdf") && chip.contains("1.2 MB") && chip.contains("📄"));
+        assert_eq!(fids_in(&format!("x{chip}y{}{chip}", file_chip("cd34", "b.zip", 10.0, ""))), vec!["ab12", "cd34"]);
+        assert_eq!(file_icon("a.ZIP", "application/zip"), "🗜");
+        assert_eq!(file_icon("a.docx", ""), "📝");
+        assert_eq!(file_icon("a.bin", ""), "📎");
+        assert!(viewable("a.pdf", "") && viewable("a.mp4", "video/mp4") && !viewable("a.docx", "application/msword"));
+        assert!(inline_image("image/png") && !inline_image("image/heic"));
         assert_eq!(size_label(10.0), "1 KB");
         let n = Note { files: vec!["ab12".into()], ..Default::default() };
         assert!(!n.is_empty());

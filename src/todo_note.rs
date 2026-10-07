@@ -5,7 +5,9 @@
 //! 貼上時只收純文字和圖片，不收其他網頁的格式，所以存下來的 HTML 只有文字、換行和 <img>。
 
 use crate::chrome::{self, to_js};
-use crate::todo::{file_chip, file_key, fids_in, note_key, set_has_note, set_title, Note, NoteFile, Todo, KEY, MAX_FILE_BYTES};
+use crate::todo::{
+    file_chip, file_key, fids_in, inline_image, note_key, set_has_note, set_title, viewable, Note, NoteFile, Todo, KEY, MAX_FILE_BYTES,
+};
 use crate::ui::{doc, el, listen, on_click, spawn, timeout};
 use std::cell::{Cell, RefCell};
 use wasm_bindgen::prelude::*;
@@ -312,43 +314,47 @@ async fn shrink(data: String) -> String {
     canvas.to_data_url_with_type_and_encoder_options("image/jpeg", &JsValue::from_f64(0.85)).unwrap_or(data)
 }
 
-fn is_pdf(f: &File) -> bool {
-    f.type_() == "application/pdf" || f.name().to_lowercase().ends_with(".pdf")
-}
-
-/// 在游標位置插入圖片或 PDF
+/// 在游標位置插入：一般圖片直接顯示在筆記裡，其他任何檔案變成附件標籤
 fn add_files(files: Vec<File>) {
-    let files: Vec<File> = files.into_iter().filter(|f| f.type_().starts_with("image/") || is_pdf(f)).collect();
     if files.is_empty() {
         return;
     }
     msg("加入檔案中…");
     spawn(async move {
         let mut too_big = vec![];
+        // 一次插入全部，順序才會跟選檔順序一樣
+        let mut parts = vec![];
         for f in files {
-            if is_pdf(&f) {
-                if f.size() > MAX_FILE_BYTES {
-                    too_big.push(f.name());
-                    continue;
+            if inline_image(&f.type_()) {
+                if let Some(d) = read_data_url(&f).await {
+                    let d = shrink(d).await;
+                    // data: 網址只有英數字和 +/=;:,，放進屬性很安全；保險起見還是去掉引號
+                    parts.push(format!("<img src=\"{}\" alt=\"\"><br>", d.replace(['"', '<', '>'], "")));
                 }
-                let Some(d) = read_data_url(&f).await else { continue };
-                let fid = format!("{:x}{:06x}", chrome::now() as u64, (js_sys::Math::random() * 16_777_216.0) as u32);
-                let file = NoteFile { name: f.name(), mime: "application/pdf".into(), data: d };
-                chrome::set(&[(file_key(&fid).as_str(), to_js(&file))]).await;
-                SESSION_FILES.with(|s| s.borrow_mut().push(fid.clone()));
-                insert_html(&format!("{}&nbsp;", file_chip(&fid, &f.name(), f.size())));
-            } else if let Some(d) = read_data_url(&f).await {
-                let d = shrink(d).await;
-                // data: 網址只有英數字和 +/=;:,，放進屬性很安全；保險起見還是去掉引號
-                insert_html(&format!("<img src=\"{}\" alt=\"\"><br>", d.replace(['"', '<', '>'], "")));
+                continue;
             }
+            if f.size() > MAX_FILE_BYTES {
+                too_big.push(f.name());
+                continue;
+            }
+            let Some(d) = read_data_url(&f).await else { continue };
+            let fid = format!("{:x}{:06x}", chrome::now() as u64, (js_sys::Math::random() * 16_777_216.0) as u32);
+            let mime = if f.type_().is_empty() { "application/octet-stream".to_string() } else { f.type_() };
+            let file = NoteFile { name: f.name(), mime: mime.clone(), data: d };
+            chrome::set(&[(file_key(&fid).as_str(), to_js(&file))]).await;
+            SESSION_FILES.with(|s| s.borrow_mut().push(fid.clone()));
+            parts.push(format!("{}&nbsp;", file_chip(&fid, &f.name(), f.size(), &mime)));
+        }
+        if !parts.is_empty() {
+            insert_html(&parts.concat());
         }
         save_now().await;
         msg(&too_big.iter().map(|n| format!("檔案太大：{n}（上限 30 MB）")).collect::<Vec<_>>().join("\n"));
     });
 }
 
-/// 點筆記裡的 PDF：在新分頁打開（Chrome 不能直接開 data: 網址的 PDF，先轉成 blob:）
+/// 點筆記裡的附件：PDF、圖片、影音、文字檔在新分頁打開；其他類型直接下載
+/// （Chrome 不能直接開 data: 網址，先轉成 blob:）
 async fn open_file(fid: String) {
     let Some(f) = chrome::get::<NoteFile>(&file_key(&fid)).await else {
         return msg("找不到這個檔案（可能已被刪除）");
@@ -358,8 +364,14 @@ async fn open_file(fid: String) {
     let resp: web_sys::Response = resp.unchecked_into();
     let Ok(p) = resp.blob() else { return };
     let Ok(blob) = wasm_bindgen_futures::JsFuture::from(p).await else { return };
-    if let Ok(url) = web_sys::Url::create_object_url_with_blob(blob.unchecked_ref()) {
+    let Ok(url) = web_sys::Url::create_object_url_with_blob(blob.unchecked_ref()) else { return };
+    if viewable(&f.name, &f.mime) {
         chrome::open_in_new_tab(&url, true).await;
+    } else {
+        let a: web_sys::HtmlAnchorElement = doc().create_element("a").unwrap().unchecked_into();
+        a.set_href(&url);
+        a.set_download(&f.name);
+        a.click();
     }
 }
 
@@ -407,7 +419,7 @@ pub fn start() {
         let items = dt.items();
         let files: Vec<File> = (0..items.length())
             .filter_map(|i| items.get(i))
-            .filter(|it| it.kind() == "file" && (it.type_().starts_with("image/") || it.type_() == "application/pdf"))
+            .filter(|it| it.kind() == "file")
             .filter_map(|it| it.get_as_file().ok().flatten())
             .collect();
         if !files.is_empty() {
