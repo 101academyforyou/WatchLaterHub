@@ -303,6 +303,9 @@ pub struct BookmarkNode {
     pub index: Option<u32>,
     #[serde(default)]
     pub children: Option<Vec<BookmarkNode>>,
+    /// "bookmarks-bar"、"other"、"mobile"（Chrome 134 起才有；登入同步書籤時書籤列的 id 不一定是 "1"）
+    #[serde(rename = "folderType", default)]
+    pub folder_type: Option<String>,
 }
 
 pub async fn bookmarks_tree() -> R<Vec<BookmarkNode>> {

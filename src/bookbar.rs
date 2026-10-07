@@ -15,11 +15,16 @@ thread_local! {
     static ITEMS: RefCell<Vec<BookmarkNode>> = const { RefCell::new(vec![]) };
 }
 
-fn find(n: &BookmarkNode, id: &str) -> Option<BookmarkNode> {
-    if n.id == id {
-        return Some(n.clone());
-    }
-    n.children.iter().flatten().find_map(|c| find(c, id))
+/// 書籤列裡的項目。登入 Chrome 同步書籤時會有兩個書籤列（本機的 id "1" 和帳號的），
+/// 都用 folderType 認出來後合在一起，帳號的排前面（跟 Chrome 顯示的順序一樣）
+pub fn bar_items(roots: &[BookmarkNode]) -> Vec<BookmarkNode> {
+    let mut bars: Vec<&BookmarkNode> = roots
+        .iter()
+        .flat_map(|r| r.children.iter().flatten())
+        .filter(|n| n.folder_type.as_deref() == Some("bookmarks-bar") || (n.folder_type.is_none() && n.id == BAR_ID))
+        .collect();
+    bars.sort_by_key(|n| n.id == BAR_ID);
+    bars.into_iter().flat_map(|b| b.children.clone().unwrap_or_default()).collect()
 }
 
 fn is_folder(n: &BookmarkNode) -> bool {
@@ -44,8 +49,7 @@ fn folder_button(n: &BookmarkNode, class: &str) -> Element {
 async fn render() {
     let bar = el("bbar");
     let roots = chrome::bookmarks_tree().await.unwrap_or_default();
-    let items: Vec<BookmarkNode> =
-        roots.iter().find_map(|r| find(r, BAR_ID)).and_then(|b| b.children).unwrap_or_default();
+    let items = bar_items(&roots);
     bar.set_inner_html("");
     for n in &items {
         let e = if is_folder(n) {
@@ -204,4 +208,38 @@ pub fn start() {
     });
     chrome::on_bookmarks_changed(|| spawn(render()));
     spawn(render());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn node(id: &str, ft: Option<&str>, kids: Vec<BookmarkNode>) -> BookmarkNode {
+        BookmarkNode {
+            id: id.into(),
+            title: id.into(),
+            url: if ft.is_none() && kids.is_empty() { Some(format!("https://{id}.com/")) } else { None },
+            folder_type: ft.map(String::from),
+            children: Some(kids),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn finds_local_and_account_bars() {
+        let leaf = |id: &str| node(id, None, vec![]);
+        let old = vec![node("0", None, vec![node("1", None, vec![leaf("a")]), node("2", None, vec![leaf("b")])])];
+        assert_eq!(bar_items(&old).iter().map(|n| n.id.as_str()).collect::<Vec<_>>(), ["a"]);
+
+        let synced = vec![node(
+            "0",
+            None,
+            vec![
+                node("1", Some("bookmarks-bar"), vec![leaf("local")]),
+                node("2", Some("other"), vec![leaf("o")]),
+                node("100", Some("bookmarks-bar"), vec![leaf("acct1"), leaf("acct2")]),
+            ],
+        )];
+        assert_eq!(bar_items(&synced).iter().map(|n| n.id.as_str()).collect::<Vec<_>>(), ["acct1", "acct2", "local"]);
+    }
 }
