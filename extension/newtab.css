@@ -376,6 +376,25 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 .note-editor:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
 .note-editor img { display: block; max-width: 100%; max-height: 320px; margin: 6px 0; border-radius: 8px; cursor: zoom-in; }
 .note-editor img:hover { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.note-editor img[style*="width"] { max-height: none; height: auto; }
+.note-editor img.sel { outline: 2px solid var(--accent); }
+.note-dialog { position: fixed; }
+.note-imgbar {
+  position: absolute; z-index: 3; display: flex; gap: 2px; padding: 3px; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+.note-imgbar[hidden] { display: none; }
+.note-imgbar button {
+  border: 0; background: none; color: var(--fg); font: inherit; font-size: 12px; padding: 4px 8px;
+  border-radius: 7px; cursor: pointer; white-space: nowrap;
+}
+.note-imgbar button:hover { background: var(--pill); }
+.note-imgbar button.on { background: color-mix(in srgb, var(--accent) 16%, var(--pill)); color: var(--accent); font-weight: 600; }
+.note-handle {
+  position: absolute; z-index: 3; width: 14px; height: 14px; border-radius: 3px; cursor: nwse-resize;
+  background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--accent); touch-action: none;
+}
+.note-handle[hidden] { display: none; }
 .note-view {
   position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,.8); cursor: zoom-out;
@@ -470,7 +489,11 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
   display: none; gap: 2px; padding: 0 2px 0 8px; background: var(--pill); border-radius: 999px;
 }
 .todo-item:hover .prio-others, .todo-item:focus-within .prio-others { display: inline-flex; }
-.prio-others .todo-prio { opacity: .55; }
+.prio-others .todo-prio { opacity: .55; padding: 0 4px; }
+.todo-prio .pn { margin-left: 4px; }
+.prio-others .todo-prio .pn { display: none; }
+/* 正在改文字時不顯示優先順序，避免蓋住輸入框 */
+.todo-item:has(.todo-edit) .todo-prios { display: none; }
 .prio-others .todo-prio:hover, .prio-others .todo-prio:focus-visible { opacity: 1; background: var(--line); }
 .todo-item.done .todo-prio.on { opacity: .5; }
 @media (hover: none) { .prio-others { display: inline-flex; position: static; transform: none; background: none; } }

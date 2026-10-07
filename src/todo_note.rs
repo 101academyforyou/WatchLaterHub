@@ -24,6 +24,86 @@ thread_local! {
     static SAVE_SEQ: Cell<u32> = const { Cell::new(0) };
     /// 筆記區最後的游標位置（按「上傳圖片」時筆記區會失去焦點）
     static CARET: RefCell<Option<Range>> = const { RefCell::new(None) };
+    /// 選取中的圖片（顯示大小工具列和拖曳點）
+    static SELECTED: RefCell<Option<HtmlImageElement>> = const { RefCell::new(None) };
+    /// 拖曳調整大小：(起點 x, 起始寬度)
+    static RESIZING: Cell<Option<(f64, f64)>> = const { Cell::new(None) };
+}
+
+// ---------- 圖片大小 ----------
+
+fn selected() -> Option<HtmlImageElement> {
+    SELECTED.with(|s| s.borrow().clone()).filter(|img| editor().contains(Some(img)))
+}
+
+fn deselect() {
+    if let Some(img) = SELECTED.with(|s| s.borrow_mut().take()) {
+        let _ = img.class_list().remove_1("sel");
+    }
+    el("note-imgbar").set_hidden(true);
+    el("note-handle").set_hidden(true);
+}
+
+fn select(img: HtmlImageElement) {
+    deselect();
+    let _ = img.class_list().add_1("sel");
+    SELECTED.with(|s| *s.borrow_mut() = Some(img));
+    el("note-imgbar").set_hidden(false);
+    el("note-handle").set_hidden(false);
+    place_tools();
+}
+
+/// 工具列放在圖片上方、拖曳點放在右下角（座標相對於視窗本身）
+fn place_tools() {
+    let Some(img) = selected() else { return deselect() };
+    let d = dialog();
+    let dr = d.get_bounding_client_rect();
+    let r = img.get_bounding_client_rect();
+    let er = editor().get_bounding_client_rect();
+    // 圖片捲到筆記區外面就先藏起來
+    let visible = r.bottom() > er.top() && r.top() < er.bottom();
+    el("note-imgbar").set_hidden(!visible);
+    el("note-handle").set_hidden(!visible || r.bottom() > er.bottom());
+    let (ox, oy) = (d.scroll_left() as f64 - dr.left() - d.client_left() as f64, d.scroll_top() as f64 - dr.top() - d.client_top() as f64);
+    let bar = el("note-imgbar");
+    // 優先放在圖片上方（不蓋住圖片）；上方沒空間才放進圖片裡
+    let bh = bar.offset_height() as f64;
+    let above = r.top() - bh - 4.0;
+    let top = (if above >= er.top() { above } else { r.top().max(er.top()) + 6.0 } + oy).max(0.0);
+    let left = (r.left() + 6.0 + ox).max(0.0);
+    let _ = bar.style().set_property("top", &format!("{top}px"));
+    let _ = bar.style().set_property("left", &format!("{left}px"));
+    let h = el("note-handle");
+    let _ = h.style().set_property("top", &format!("{}px", r.bottom() - 9.0 + oy));
+    let _ = h.style().set_property("left", &format!("{}px", r.right() - 9.0 + ox));
+    // 標示目前的大小
+    let cur = img.style().get_property_value("width").unwrap_or_default();
+    for b in bar.query_selector_all("button[data-w]").map(|l| (0..l.length()).filter_map(|i| l.item(i)).collect::<Vec<_>>()).unwrap_or_default() {
+        let b: web_sys::Element = b.unchecked_into();
+        let w = b.get_attribute("data-w").unwrap_or_default();
+        let on = if w == "0" { cur.is_empty() } else { cur == format!("{w}%") };
+        let _ = b.class_list().toggle_with_force("on", on);
+    }
+}
+
+/// 筆記區可放內容的寬度（扣掉左右留白）
+fn content_width() -> f64 {
+    let e = editor();
+    let cs = web_sys::window().unwrap().get_computed_style(&e).ok().flatten();
+    let pad = |p: &str| cs.as_ref().and_then(|c| c.get_property_value(p).ok()).and_then(|v| v.trim_end_matches("px").parse::<f64>().ok()).unwrap_or(0.0);
+    (e.client_width() as f64 - pad("padding-left") - pad("padding-right")).max(1.0)
+}
+
+/// 設定圖片寬度（佔筆記區的百分比；0 = 原始大小）
+fn set_width(img: &HtmlImageElement, pct: f64) {
+    if pct <= 0.0 {
+        let _ = img.style().remove_property("width");
+        if img.get_attribute("style").is_some_and(|s| s.trim().is_empty()) {
+            let _ = img.remove_attribute("style");
+        }
+    } else {
+        let _ = img.style().set_property("width", &format!("{}%", pct.clamp(5.0, 100.0).round()));
+    }
 }
 
 fn dialog() -> HtmlDialogElement {
@@ -56,6 +136,7 @@ pub fn open(id: String) {
         editor().set_inner_html(&note.to_html());
         CURRENT.with(|c| *c.borrow_mut() = Some(id));
         CARET.with(|c| *c.borrow_mut() = None);
+        deselect();
         msg("");
         el("note-view").set_hidden(true);
         let _ = dialog().show_modal();
@@ -77,7 +158,9 @@ async fn save_now() {
     let Some(id) = CURRENT.with(|c| c.borrow().clone()) else { return };
     tidy_editor();
     let e = editor();
-    let note = Note { text: e.inner_text(), images: vec![], html: e.inner_html() };
+    // 選取標記不要存進去
+    let html = e.inner_html().replace(" class=\"sel\"", "").replace(" class=\"\"", "");
+    let note = Note { text: e.inner_text(), images: vec![], html };
     let key = note_key(&id);
     if note.is_empty() {
         chrome::remove(&[&key]).await;
@@ -107,6 +190,7 @@ fn save_soon() {
 }
 
 fn close() {
+    deselect();
     SAVE_SEQ.with(|s| s.set(s.get() + 1)); // 取消排定的儲存，直接存
     spawn(async {
         save_now().await;
@@ -238,6 +322,12 @@ fn add_files(files: Vec<File>) {
     });
 }
 
+fn zoom(img: &HtmlImageElement) {
+    let view = el("note-view");
+    view.query_selector("img").unwrap().unwrap().unchecked_into::<HtmlImageElement>().set_src(&img.src());
+    view.set_hidden(false);
+}
+
 fn files_of(list: Option<web_sys::FileList>) -> Vec<File> {
     let Some(list) = list else { return vec![] };
     (0..list.length()).filter_map(|i| list.get(i)).collect()
@@ -319,14 +409,87 @@ pub fn start() {
             }
         }
     });
-    // 點筆記裡的圖片：放大
-    listen(&ed, "click", |e| {
+    // 點筆記裡的圖片：選取（出現大小工具列和右下角拖曳點）；點兩下：放大檢視
+    listen(&ed, "click", |e| match e.target().and_then(|t| t.dyn_into::<HtmlImageElement>().ok()) {
+        Some(img) => select(img),
+        None => deselect(),
+    });
+    listen(&ed, "dblclick", |e| {
         if let Some(img) = e.target().and_then(|t| t.dyn_into::<HtmlImageElement>().ok()) {
-            let view = el("note-view");
-            view.query_selector("img").unwrap().unwrap().unchecked_into::<HtmlImageElement>().set_src(&img.src());
-            view.set_hidden(false);
+            zoom(&img);
         }
     });
+    listen(&ed, "scroll", |_| place_tools());
+    listen(&el("note-dialog"), "scroll", |_| place_tools());
+    listen(&web_sys::window().unwrap(), "resize", |_| {
+        if is_open() {
+            place_tools();
+        }
+    });
+    // 選取圖片時按 Delete／Backspace：刪掉圖片；打其他字：取消選取
+    listen(&ed, "keydown", |e| {
+        let Some(img) = selected() else { return };
+        let k: &KeyboardEvent = e.unchecked_ref();
+        if matches!(k.key().as_str(), "Delete" | "Backspace") {
+            e.prevent_default();
+            img.remove();
+            deselect();
+            save_soon();
+        } else {
+            deselect();
+        }
+    });
+    // 大小按鈕
+    if let Ok(list) = el("note-imgbar").query_selector_all("button[data-w]") {
+        for b in (0..list.length()).filter_map(|i| list.item(i)) {
+            let b: web_sys::Element = b.unchecked_into();
+            let pct: f64 = b.get_attribute("data-w").and_then(|w| w.parse().ok()).unwrap_or(0.0);
+            listen(&b, "mousedown", |e| e.prevent_default()); // 不要讓筆記區失去游標
+            listen(&b, "click", move |_| {
+                if let Some(img) = selected() {
+                    set_width(&img, pct);
+                    // 等版面重排後再放工具列
+                    timeout(0, place_tools);
+                    save_soon();
+                }
+            });
+        }
+    }
+    on_click("note-zoom", || {
+        if let Some(img) = selected() {
+            zoom(&img);
+        }
+    });
+    on_click("note-imgdel", || {
+        if let Some(img) = selected() {
+            img.remove();
+            deselect();
+            save_soon();
+        }
+    });
+    // 右下角拖曳點：自由調整寬度
+    let handle = el("note-handle");
+    listen(&handle, "pointerdown", |e| {
+        let ev: &web_sys::PointerEvent = e.unchecked_ref();
+        let Some(img) = selected() else { return };
+        e.prevent_default();
+        let _ = el("note-handle").set_pointer_capture(ev.pointer_id());
+        RESIZING.with(|r| r.set(Some((ev.client_x() as f64, img.get_bounding_client_rect().width()))));
+    });
+    listen(&handle, "pointermove", |e| {
+        let ev: &web_sys::PointerEvent = e.unchecked_ref();
+        let (Some((x0, w0)), Some(img)) = (RESIZING.with(|r| r.get()), selected()) else { return };
+        let w = (w0 + ev.client_x() as f64 - x0).max(40.0);
+        set_width(&img, w / content_width() * 100.0);
+        place_tools();
+    });
+    for ev in ["pointerup", "pointercancel"] {
+        listen(&handle, ev, |_| {
+            if RESIZING.with(|r| r.take()).is_some() {
+                save_soon();
+            }
+        });
+    }
     listen(&el("note-view"), "click", |_| el("note-view").set_hidden(true));
     // Esc：先關放大的圖片，再關視窗（都要存檔）
     listen(&el("note-dialog"), "cancel", |e| {

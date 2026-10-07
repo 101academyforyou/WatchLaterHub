@@ -221,6 +221,11 @@ const EXACT: &[(&str, &str)] = &[
     ("點一下放大", "Click to enlarge"),
     ("移除圖片", "Remove image"),
     ("加入圖片中…", "Adding images…"),
+    ("圖片大小", "Image size"),
+    ("原始", "Original"),
+    ("原始大小", "Original size"),
+    ("放大檢視", "View larger"),
+    ("拖曳調整大小", "Drag to resize"),
     // 計時器
     ("碼表", "Stopwatch"),
     ("倒數計時", "Countdown"),

@@ -461,7 +461,10 @@ pub(crate) mod view {
                 let _ = b.set_attribute("aria-checked", if on { "true" } else { "false" });
                 let _ = b.set_attribute("title", &if on { "再點一下取消".to_string() } else { format!("設為{name}") });
                 let _ = b.set_attribute("aria-label", name);
-                b.set_text_content(Some(&format!("{dot} {name}")));
+                // 圓點和名稱分開：沒選的選項只顯示圓點，才不會蓋住待辦文字
+                b.set_inner_html(r#"<span class="pd"></span><span class="pn"></span>"#);
+                b.query_selector(".pd").unwrap().unwrap().set_text_content(Some(dot));
+                b.query_selector(".pn").unwrap().unwrap().set_text_content(Some(name));
                 let id = t.id.clone();
                 listen(&b, "click", move |e| {
                     e.stop_propagation();
