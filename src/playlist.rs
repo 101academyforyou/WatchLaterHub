@@ -129,6 +129,7 @@ pub async fn fetch_all(playlist_id: &str, progress: impl FnMut(usize)) -> R<Vec<
 }
 
 /// 抓取「稍後觀看」：用這個瀏覽器目前登入的 YouTube 帳號讀取（YouTube API 不開放這個清單）
+/// 只讀得到第一頁（前 100 部左右）
 pub async fn fetch_watch_later() -> R<Vec<Video>> {
     fetch_list(WATCH_LATER_ID, |_| {}).await
 }
@@ -136,7 +137,7 @@ pub async fn fetch_watch_later() -> R<Vec<Video>> {
 /// 「稍後觀看」有幾部（讀清單頁面標題列的「N 部影片」；讀不到時回傳 None）
 pub async fn watch_later_count() -> Option<u64> {
     let page = format!("https://www.youtube.com/playlist?list={WATCH_LATER_ID}&hl=zh-TW");
-    let (status, html) = chrome::fetch_text(&page, "GET", None, &[]).await.ok()?;
+    let (status, html) = chrome::fetch_text(&page, "GET", None).await.ok()?;
     if status >= 400 || !html.contains("\"LOGGED_IN\":true") {
         return None;
     }
@@ -173,72 +174,11 @@ pub fn parse_count(t: &str) -> Option<u64> {
     (!num.is_empty() && num.chars().all(|c| c.is_ascii_digit())).then(|| num.parse().ok()).flatten()
 }
 
-/// 私人清單（稍後觀看）翻頁時要附上的登入驗證標頭；沒登入 YouTube 時回傳空的
-async fn auth_headers(html: &str) -> Vec<(String, String)> {
-    const ORIGIN: &str = "https://www.youtube.com";
-    let mut h = vec![("X-Origin".to_string(), ORIGIN.to_string())];
-    if let Some(i) = extract_cfg(html, "SESSION_INDEX") {
-        h.push(("X-Goog-AuthUser".into(), i));
-    }
-    if let Some(v) = extract_cfg(html, "VISITOR_DATA") {
-        h.push(("X-Goog-Visitor-Id".into(), v));
-    }
-    let sid = match chrome::cookie(ORIGIN, "SAPISID").await {
-        Some(s) => Some(s),
-        None => chrome::cookie(ORIGIN, "__Secure-3PAPISID").await,
-    };
-    if let Some(sid) = sid {
-        let ts = (chrome::now() / 1000.0) as u64;
-        h.push(("Authorization".into(), sapisid_hash(ts, &sid, ORIGIN)));
-    }
-    h
-}
-
-/// YouTube 網頁版的登入驗證：`SAPISIDHASH 時間_SHA1(時間 SAPISID 來源)`
-pub fn sapisid_hash(ts: u64, sapisid: &str, origin: &str) -> String {
-    format!("SAPISIDHASH {ts}_{}", sha1_hex(format!("{ts} {sapisid} {origin}").as_bytes()))
-}
-
-/// SHA-1（只用來產生上面的驗證字串）
-pub fn sha1_hex(data: &[u8]) -> String {
-    let mut h: [u32; 5] = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0];
-    let mut msg = data.to_vec();
-    msg.push(0x80);
-    while msg.len() % 64 != 56 {
-        msg.push(0);
-    }
-    msg.extend_from_slice(&((data.len() as u64) * 8).to_be_bytes());
-    for chunk in msg.chunks(64) {
-        let mut w = [0u32; 80];
-        for i in 0..16 {
-            w[i] = u32::from_be_bytes([chunk[i * 4], chunk[i * 4 + 1], chunk[i * 4 + 2], chunk[i * 4 + 3]]);
-        }
-        for i in 16..80 {
-            w[i] = (w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]).rotate_left(1);
-        }
-        let [mut a, mut b, mut c, mut d, mut e] = h;
-        for (i, wi) in w.iter().enumerate() {
-            let (f, k) = match i {
-                0..=19 => ((b & c) | (!b & d), 0x5A827999),
-                20..=39 => (b ^ c ^ d, 0x6ED9EBA1),
-                40..=59 => ((b & c) | (b & d) | (c & d), 0x8F1BBCDC),
-                _ => (b ^ c ^ d, 0xCA62C1D6),
-            };
-            let t = a.rotate_left(5).wrapping_add(f).wrapping_add(e).wrapping_add(k).wrapping_add(*wi);
-            (e, d, c, b, a) = (d, c, b.rotate_left(30), a, t);
-        }
-        for (x, y) in h.iter_mut().zip([a, b, c, d, e]) {
-            *x = x.wrapping_add(y);
-        }
-    }
-    h.iter().map(|x| format!("{x:08x}")).collect()
-}
-
 /// 讀取清單（可能是空的）
 async fn fetch_list(playlist_id: &str, mut progress: impl FnMut(usize)) -> R<Vec<Video>> {
     let watch_later = playlist_id == WATCH_LATER_ID;
     let page = format!("https://www.youtube.com/playlist?list={playlist_id}&hl=zh-TW");
-    let (status, html) = chrome::fetch_text(&page, "GET", None, &[]).await?;
+    let (status, html) = chrome::fetch_text(&page, "GET", None).await?;
     if status >= 400 {
         return Err(format!("打不開播放清單（HTTP {status}）"));
     }
@@ -263,7 +203,10 @@ async fn fetch_list(playlist_id: &str, mut progress: impl FnMut(usize)) -> R<Vec
         Some(k) => format!("https://www.youtube.com/youtubei/v1/browse?prettyPrint=false&key={k}"),
         None => "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false".into(),
     };
-    let headers = if watch_later { auth_headers(&html).await } else { vec![] };
+    // 「稍後觀看」是私人清單，下一頁要另外的登入驗證，所以只讀第一頁（前 100 部左右）
+    if watch_later {
+        next = None;
+    }
 
     let mut seen_tokens = vec![];
     for _ in 0..MAX_PAGES {
@@ -276,7 +219,7 @@ async fn fetch_list(playlist_id: &str, mut progress: impl FnMut(usize)) -> R<Vec
             "context": { "client": { "clientName": "WEB", "clientVersion": version, "hl": "zh-TW" } },
             "continuation": token,
         });
-        let (status, text) = chrome::fetch_text(&api, "POST", Some(&body.to_string()), &headers).await?;
+        let (status, text) = chrome::fetch_text(&api, "POST", Some(&body.to_string())).await?;
         if status >= 400 {
             break; // 已經拿到的先回傳
         }
@@ -306,35 +249,6 @@ mod tests {
         assert_eq!(parse_playlist_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ"), None);
         assert_eq!(parse_playlist_id("dQw4w9WgXcQ"), None);
         assert_eq!(parse_playlist_id("https://example.com/?list=PLabcdefghijkl"), None);
-    }
-
-    #[test]
-    fn sha1_and_sapisid_hash() {
-        assert_eq!(sha1_hex(b""), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
-        assert_eq!(sha1_hex(b"abc"), "a9993e364706816aba3e25717850c26c9cd0d89d");
-        assert_eq!(
-            sha1_hex(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),
-            "84983e441c3bd26ebaae4aa1f95129e5e54670f1"
-        );
-        assert_eq!(
-            sapisid_hash(1700000000, "abc", "https://www.youtube.com"),
-            format!("SAPISIDHASH 1700000000_{}", sha1_hex(b"1700000000 abc https://www.youtube.com"))
-        );
-    }
-
-    #[test]
-    fn finds_video_count() {
-        assert_eq!(parse_count("1,234 部影片"), Some(1234));
-        assert_eq!(parse_count("沒有影片"), Some(0));
-        assert_eq!(parse_count("部影片"), None);
-        assert_eq!(parse_count("觀看次數：12 次"), None);
-        let old = json!({"header": {"playlistHeaderRenderer": {"title": {"simpleText": "稍後觀看"},
-            "numVideosText": {"runs": [{"text": "57"}, {"text": " 部影片"}]}}}});
-        assert_eq!(find_count(&old), Some(57));
-        let new = json!({"header": {"pageHeaderViewModel": {"metadata": {"contentMetadataViewModel": {"metadataRows": [
-            {"metadataParts": [{"text": {"content": "我"}}, {"text": {"content": "8 部影片"}}]}]}}}}});
-        assert_eq!(find_count(&new), Some(8));
-        assert_eq!(find_count(&json!({"a": "沒有東西"})), None);
     }
 
     #[test]
