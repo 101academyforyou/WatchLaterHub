@@ -21,5 +21,5 @@ pub const DEFAULT_VIDEOS: &[(&str, &str, &str)] = &[
     ),
 ];
 
-/// 每個來源（喜歡的影片／播放清單）最多同步幾部
+/// 每個來源（稍後觀看／播放清單）最多同步幾部
 pub const MAX_PER_SOURCE: usize = 1000;

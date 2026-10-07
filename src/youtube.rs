@@ -8,7 +8,8 @@ use crate::videos::{dedupe, is_valid_client_id, parse_fragment, query, Video};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-pub const LIKED: &str = "LIKED"; // 代表「喜歡的影片」的來源 ID
+/// 舊版的「喜歡的影片」來源 ID（已移除；舊設定裡若還勾著會略過）
+pub(crate) const LIKED: &str = "LIKED";
 const API: &str = "https://www.googleapis.com/youtube/v3/";
 const USERINFO: &str = "https://www.googleapis.com/oauth2/v3/";
 const SCOPES: &str = "https://www.googleapis.com/auth/youtube.readonly email";
@@ -48,7 +49,7 @@ pub async fn settings() -> Settings {
     Settings {
         connected: chrome::get_or("ytConnected", false).await,
         channel: chrome::get("ytChannel").await,
-        sources: chrome::get_or("ytSources", vec![LIKED.to_string()]).await,
+        sources: chrome::get_or("ytSources", Vec::<String>::new()).await.into_iter().filter(|s| s != LIKED).collect(),
         synced_at: chrome::get_or("ytSyncedAt", 0.0).await,
         error: chrome::get_or("ytError", String::new()).await,
     }
@@ -176,11 +177,7 @@ async fn pages(path: &str, params: &[(&str, &str)], map: fn(&Value) -> Option<Vi
 }
 
 pub async fn list_sources() -> R<Vec<Source>> {
-    let liked = api(API, "videos", &[("part", "id"), ("myRating", "like"), ("maxResults", "1")], false).await?;
-    let mut out = vec![
-        Source { id: WATCH_LATER_ID.into(), title: "稍後觀看".into(), count: playlist::watch_later_count().await },
-        Source { id: LIKED.into(), title: "喜歡的影片".into(), count: liked["pageInfo"]["totalResults"].as_u64() },
-    ];
+    let mut out = vec![Source { id: WATCH_LATER_ID.into(), title: "稍後觀看".into(), count: playlist::watch_later_count().await }];
     let mut page_token = String::new();
     loop {
         let mut p = vec![("part", "snippet,contentDetails"), ("mine", "true"), ("maxResults", "50")];
@@ -203,10 +200,6 @@ pub async fn list_sources() -> R<Vec<Source>> {
     Ok(out)
 }
 
-fn liked_item(v: &Value) -> Option<Video> {
-    Some(Video::new(v["id"].as_str()?, v["snippet"]["title"].as_str()?, v["snippet"]["channelTitle"].as_str().unwrap_or("")))
-}
-
 fn playlist_item(it: &Value) -> Option<Video> {
     let s = &it["snippet"];
     let owner = s["videoOwnerChannelTitle"].as_str()?; // 已刪除或私人影片沒有這個欄位
@@ -219,8 +212,6 @@ async fn fetch_source(id: &str) -> R<Vec<Video>> {
         let mut v = playlist::fetch_watch_later().await?;
         v.truncate(config::MAX_PER_SOURCE);
         Ok(v)
-    } else if id == LIKED {
-        pages("videos", &[("part", "snippet"), ("myRating", "like")], liked_item).await
     } else {
         pages("playlistItems", &[("part", "snippet"), ("playlistId", id)], playlist_item).await
     }

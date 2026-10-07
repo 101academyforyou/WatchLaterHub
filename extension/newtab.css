@@ -380,6 +380,15 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 .note-editor img:hover { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); }
 .note-editor img[style*="width"] { max-height: none; height: auto; }
 .note-editor img.sel { outline: 2px solid var(--accent); }
+.note-file {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; margin: 2px 0; padding: 4px 10px 4px 8px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--pill); cursor: pointer; user-select: none;
+  vertical-align: middle; line-height: 1.4;
+}
+.note-file:hover { border-color: var(--accent); }
+.nf-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.nf-size { flex: none; color: var(--muted); font-size: 12px; }
+#note-msg { white-space: pre-line; }
 .note-dialog { position: fixed; }
 .note-imgbar {
   position: absolute; z-index: 3; display: flex; gap: 2px; padding: 3px; border-radius: 10px;

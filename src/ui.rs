@@ -197,9 +197,9 @@ async fn render() {
     let (title, desc) = if logging_in() || (s.connected && s.synced_at == 0.0) {
         ("正在載入你的 YouTube 收藏…", "第一次同步可能需要幾秒鐘")
     } else if s.connected {
-        ("你的清單裡還沒有影片", "去 YouTube 按讚幾部影片，或在「收藏」勾選其他播放清單。")
+        ("你的清單裡還沒有影片", "把影片加到 YouTube 的「稍後觀看」或播放清單，再到「收藏」勾選。")
     } else {
-        ("每開一個分頁，重溫一部你收藏的影片", "用 Google 帳號登入，自動載入你在 YouTube 按讚的影片與播放清單。")
+        ("每開一個分頁，重溫一部你收藏的影片", "用 Google 帳號登入，自動載入你在 YouTube 的稍後觀看與播放清單。")
     };
     text("empty-title", title);
     text("empty-desc", desc);
@@ -403,8 +403,6 @@ async fn yt_status() {
 
 /// YouTube「稍後觀看」的時鐘圖示
 const WATCH_LATER_ICON: &str = r#"<svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>"#;
-/// YouTube「喜歡的影片」的大拇指圖示
-const LIKED_ICON: &str = r#"<svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>"#;
 
 async fn render_yt(refresh_sources: bool) {
     let s = youtube::settings().await;
@@ -426,15 +424,16 @@ async fn render_yt(refresh_sources: bool) {
             Err(e) => text("yt-status", &format!("⚠ {e}")),
         }
     }
+    // 「喜歡的影片」已移除（舊版存的清單裡可能還有）
+    srcs.retain(|s| s.id != youtube::LIKED);
     let box_ = el("yt-sources");
     box_.set_inner_html("");
     for src in srcs {
         let label = doc().create_element("label").unwrap();
         label.set_inner_html(r#"<input type="checkbox"><span class="t"></span><span class="n"></span>"#);
-        // 稍後觀看、喜歡的影片：用 YouTube 的圖示（舊版存的名稱前面有 emoji，一併換掉）
+        // 稍後觀看：用 YouTube 的圖示（舊版存的名稱前面有 emoji，一併換掉）
         let builtin = match src.id.as_str() {
             crate::playlist::WATCH_LATER_ID => Some((WATCH_LATER_ICON, "稍後觀看")),
-            youtube::LIKED => Some((LIKED_ICON, "喜歡的影片")),
             _ => None,
         };
         let src = match builtin {
@@ -613,8 +612,9 @@ pub fn start() {
             render_list().await;
             render_yt(true).await;
             // 沒有「立即同步」按鈕了：打開收藏時自動同步勾選的清單
+            // （沒勾任何清單也同步一次：清掉舊版「喜歡的影片」同步來的影片）
             let s = youtube::settings().await;
-            if s.connected && !s.sources.is_empty() {
+            if s.connected {
                 resync_soon();
             }
         });

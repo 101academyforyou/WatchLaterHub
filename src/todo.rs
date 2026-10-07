@@ -35,14 +35,70 @@ pub struct Note {
     /// 舊版：另外列在下方的圖片（data: 網址）。打開時會搬進 `html`
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub images: Vec<String>,
-    /// 筆記內容（文字和圖片混排的 HTML，只有文字、換行和 <img>）
+    /// 筆記內容（文字、圖片和 PDF 混排的 HTML：只有文字、換行、<img> 和檔案標籤）
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub html: String,
+    /// 筆記裡的檔案（PDF）id；檔案本身另外存在 `file_key(id)`，打字存檔時才不用每次重寫
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub files: Vec<String>,
+}
+
+/// 筆記裡的檔案（PDF）
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+pub struct NoteFile {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub mime: String,
+    /// data: 網址
+    pub data: String,
+}
+
+/// 檔案存在 chrome.storage 的鍵名
+pub fn file_key(fid: &str) -> String {
+    format!("todoFile:{fid}")
+}
+
+/// 單一檔案的大小上限
+pub const MAX_FILE_BYTES: f64 = 30.0 * 1024.0 * 1024.0;
+
+fn esc_html(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
+}
+
+/// 1234567 → "1.2 MB"
+pub fn size_label(bytes: f64) -> String {
+    if bytes >= 1024.0 * 1024.0 {
+        format!("{:.1} MB", bytes / 1024.0 / 1024.0)
+    } else {
+        format!("{} KB", (bytes / 1024.0).ceil().max(1.0))
+    }
+}
+
+/// 筆記裡代表一個檔案的標籤（整塊不能編輯，點一下打開）
+pub fn file_chip(fid: &str, name: &str, bytes: f64) -> String {
+    let fid: String = fid.chars().filter(|c| c.is_ascii_alphanumeric()).collect();
+    format!(
+        r#"<span class="note-file" contenteditable="false" data-fid="{fid}"><span class="nf-ico">📄</span><span class="nf-name">{}</span><span class="nf-size">{}</span></span>"#,
+        esc_html(name),
+        size_label(bytes)
+    )
+}
+
+/// HTML 裡用到的檔案 id（依出現順序、不重複）
+pub fn fids_in(html: &str) -> Vec<String> {
+    let mut out: Vec<String> = vec![];
+    for part in html.split("data-fid=\"").skip(1) {
+        let id: String = part.chars().take_while(|c| c.is_ascii_alphanumeric()).collect();
+        if !id.is_empty() && !out.contains(&id) {
+            out.push(id);
+        }
+    }
+    out
 }
 
 impl Note {
     pub fn is_empty(&self) -> bool {
-        self.text.trim().is_empty() && self.images.is_empty() && !self.html.contains("<img")
+        self.text.trim().is_empty() && self.images.is_empty() && !self.html.contains("<img") && self.files.is_empty()
     }
 
     /// 編輯區要顯示的 HTML（舊版只有文字和下方圖片的筆記，轉成混排）
@@ -390,8 +446,14 @@ pub(crate) mod view {
             let before = list.clone();
             f(&mut list);
             save(&list).await;
-            // 刪掉的項目，筆記也一起刪
-            let gone: Vec<String> = removed_ids(&before, &list).iter().map(|id| note_key(id)).collect();
+            // 刪掉的項目，筆記和筆記裡的檔案也一起刪
+            let mut gone: Vec<String> = vec![];
+            for id in removed_ids(&before, &list) {
+                if let Some(n) = chrome::get::<Note>(&note_key(&id)).await {
+                    gone.extend(n.files.iter().map(|f| file_key(f)));
+                }
+                gone.push(note_key(&id));
+            }
             if !gone.is_empty() {
                 chrome::remove(&gone.iter().map(String::as_str).collect::<Vec<_>>()).await;
             }
@@ -1030,11 +1092,21 @@ mod tests {
     use super::*;
 
     #[test]
+    fn note_files() {
+        let chip = file_chip("ab12", "報告<1>.pdf", 1_300_000.0);
+        assert!(chip.contains(r#"data-fid="ab12""#) && chip.contains("報告&lt;1&gt;.pdf") && chip.contains("1.2 MB"));
+        assert_eq!(fids_in(&format!("x{chip}y{}{chip}", file_chip("cd34", "b.pdf", 10.0))), vec!["ab12", "cd34"]);
+        assert_eq!(size_label(10.0), "1 KB");
+        let n = Note { files: vec!["ab12".into()], ..Default::default() };
+        assert!(!n.is_empty());
+    }
+
+    #[test]
     fn note_html_from_old_format() {
-        let old = Note { text: "a<b\n第二行".into(), images: vec!["data:image/png;base64,AAA".into()], html: String::new() };
+        let old = Note { text: "a<b\n第二行".into(), images: vec!["data:image/png;base64,AAA".into()], ..Default::default() };
         assert_eq!(old.to_html(), "a&lt;b<br>第二行<img src=\"data:image/png;base64,AAA\">");
         assert!(!old.is_empty());
-        let new = Note { text: String::new(), images: vec![], html: "<img src=\"data:x\">".into() };
+        let new = Note { html: "<img src=\"data:x\">".into(), ..Default::default() };
         assert!(!new.is_empty());
         assert!(Note::default().is_empty());
     }
