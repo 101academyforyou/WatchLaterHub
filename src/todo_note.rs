@@ -1,7 +1,8 @@
-//! TODO 的 📝 筆記小視窗：改主題、寫更多筆記、貼上／上傳／拖進圖片
+//! TODO 的 📝 筆記小視窗：改主題、寫更多筆記，圖片直接貼在筆記裡（文字和圖片混排）
 //!
 //! 筆記存在 `todoNote:<id>`（chrome.storage），清單只記 `hasNote`。
 //! 打字停 0.4 秒自動存；圖片超過 1600px 或太大時縮小成 JPEG。
+//! 貼上時只收純文字和圖片，不收其他網頁的格式，所以存下來的 HTML 只有文字、換行和 <img>。
 
 use crate::chrome::{self, to_js};
 use crate::todo::{note_key, set_has_note, set_title, Note, Todo, KEY};
@@ -10,17 +11,19 @@ use std::cell::{Cell, RefCell};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{
-    ClipboardEvent, DragEvent, File, FileReader, HtmlCanvasElement, HtmlDialogElement, HtmlImageElement, HtmlInputElement,
-    HtmlTextAreaElement, KeyboardEvent,
+    ClipboardEvent, DragEvent, File, FileReader, HtmlCanvasElement, HtmlDialogElement, HtmlDocument, HtmlElement,
+    HtmlImageElement, HtmlInputElement, KeyboardEvent, Range,
 };
 
 const MAX_SIDE: f64 = 1600.0;
 const MAX_BYTES: usize = 1_500_000;
 
 thread_local! {
-    /// 正在編輯的 (待辦 id, 筆記)
-    static CURRENT: RefCell<Option<(String, Note)>> = const { RefCell::new(None) };
+    /// 正在編輯的待辦 id
+    static CURRENT: RefCell<Option<String>> = const { RefCell::new(None) };
     static SAVE_SEQ: Cell<u32> = const { Cell::new(0) };
+    /// 筆記區最後的游標位置（按「上傳圖片」時筆記區會失去焦點）
+    static CARET: RefCell<Option<Range>> = const { RefCell::new(None) };
 }
 
 fn dialog() -> HtmlDialogElement {
@@ -31,8 +34,8 @@ fn title_input() -> HtmlInputElement {
     el("note-title").unchecked_into()
 }
 
-fn text_area() -> HtmlTextAreaElement {
-    el("note-text").unchecked_into()
+fn editor() -> HtmlElement {
+    el("note-text")
 }
 
 pub fn is_open() -> bool {
@@ -50,21 +53,31 @@ pub fn open(id: String) {
         let Some(t) = list.iter().find(|t| t.id == id) else { return };
         let note: Note = chrome::get_or(&note_key(&id), Note::default()).await;
         title_input().set_value(&t.text);
-        text_area().set_value(&note.text);
-        CURRENT.with(|c| *c.borrow_mut() = Some((id, note)));
+        editor().set_inner_html(&note.to_html());
+        CURRENT.with(|c| *c.borrow_mut() = Some(id));
+        CARET.with(|c| *c.borrow_mut() = None);
         msg("");
         el("note-view").set_hidden(true);
-        render_images();
         let _ = dialog().show_modal();
-        let _ = text_area().focus();
+        let _ = editor().focus();
+        caret_to_end();
     });
+}
+
+/// 只剩一個 <br> 之類的空殼時清空，讓提示文字出現
+fn tidy_editor() {
+    let e = editor();
+    if e.inner_text().trim().is_empty() && e.query_selector("img").ok().flatten().is_none() {
+        e.set_inner_html("");
+    }
 }
 
 /// 把畫面上的內容存回去
 async fn save_now() {
-    let Some((id, mut note)) = CURRENT.with(|c| c.borrow().clone()) else { return };
-    note.text = text_area().value();
-    CURRENT.with(|c| *c.borrow_mut() = Some((id.clone(), note.clone())));
+    let Some(id) = CURRENT.with(|c| c.borrow().clone()) else { return };
+    tidy_editor();
+    let e = editor();
+    let note = Note { text: e.inner_text(), images: vec![], html: e.inner_html() };
     let key = note_key(&id);
     if note.is_empty() {
         chrome::remove(&[&key]).await;
@@ -104,37 +117,61 @@ fn close() {
     }
 }
 
-fn render_images() {
-    let box_ = el("note-imgs");
-    box_.set_inner_html("");
-    let images = CURRENT.with(|c| c.borrow().as_ref().map(|(_, n)| n.images.clone()).unwrap_or_default());
-    box_.set_hidden(images.is_empty());
-    for (i, src) in images.into_iter().enumerate() {
-        let fig = doc().create_element("div").unwrap();
-        fig.set_class_name("note-img");
-        fig.set_inner_html(r#"<img alt=""><button class="bm-del" type="button" title="移除圖片" aria-label="移除圖片">✕</button>"#);
-        let img: HtmlImageElement = fig.query_selector("img").unwrap().unwrap().unchecked_into();
-        img.set_src(&src);
-        let _ = img.set_attribute("title", "點一下放大");
-        listen(&img, "click", move |_| {
-            let view = el("note-view");
-            view.query_selector("img").unwrap().unwrap().unchecked_into::<HtmlImageElement>().set_src(&src);
-            view.set_hidden(false);
-        });
-        listen(&fig.query_selector("button").unwrap().unwrap(), "click", move |_| {
-            CURRENT.with(|c| {
-                if let Some((_, n)) = c.borrow_mut().as_mut() {
-                    if i < n.images.len() {
-                        n.images.remove(i);
-                    }
-                }
-            });
-            render_images();
-            spawn(save_now());
-        });
-        box_.append_child(&fig).unwrap();
+// ---------- 游標與插入 ----------
+
+fn html_doc() -> HtmlDocument {
+    doc().unchecked_into()
+}
+
+/// 記住筆記區裡的游標位置
+fn remember_caret() {
+    let Some(sel) = web_sys::window().and_then(|w| w.get_selection().ok().flatten()) else { return };
+    if sel.range_count() == 0 {
+        return;
+    }
+    if let Ok(r) = sel.get_range_at(0) {
+        if editor().contains(Some(&r.start_container().unwrap())) {
+            CARET.with(|c| *c.borrow_mut() = Some(r.clone_range()));
+        }
     }
 }
+
+fn caret_to_end() {
+    let Some(sel) = web_sys::window().and_then(|w| w.get_selection().ok().flatten()) else { return };
+    if let Ok(r) = doc().create_range() {
+        let _ = r.select_node_contents(&editor());
+        r.collapse_with_to_start(false);
+        let _ = sel.remove_all_ranges();
+        let _ = sel.add_range(&r);
+    }
+}
+
+/// 回到筆記區上次的游標位置（沒有就放到最後）
+fn restore_caret() {
+    let _ = editor().focus();
+    let saved = CARET.with(|c| c.borrow().clone());
+    let Some(sel) = web_sys::window().and_then(|w| w.get_selection().ok().flatten()) else { return };
+    match saved {
+        Some(r) => {
+            let _ = sel.remove_all_ranges();
+            let _ = sel.add_range(&r);
+        }
+        None => caret_to_end(),
+    }
+}
+
+/// 在游標位置插入（用 execCommand，才能 Ctrl+Z 復原）
+fn insert_html(html: &str) {
+    restore_caret();
+    let _ = html_doc().exec_command_with_show_ui_and_value("insertHTML", false, html);
+    remember_caret();
+}
+
+fn insert_text(text: &str) {
+    let _ = html_doc().exec_command_with_show_ui_and_value("insertText", false, text);
+}
+
+// ---------- 圖片 ----------
 
 /// 讀檔成 data: 網址
 async fn read_data_url(file: &File) -> Option<String> {
@@ -181,6 +218,7 @@ async fn shrink(data: String) -> String {
     canvas.to_data_url_with_type_and_encoder_options("image/jpeg", &JsValue::from_f64(0.85)).unwrap_or(data)
 }
 
+/// 在游標位置插入圖片
 fn add_files(files: Vec<File>) {
     let files: Vec<File> = files.into_iter().filter(|f| f.type_().starts_with("image/")).collect();
     if files.is_empty() {
@@ -191,14 +229,10 @@ fn add_files(files: Vec<File>) {
         for f in files {
             if let Some(d) = read_data_url(&f).await {
                 let d = shrink(d).await;
-                CURRENT.with(|c| {
-                    if let Some((_, n)) = c.borrow_mut().as_mut() {
-                        n.images.push(d);
-                    }
-                });
+                // data: 網址只有英數字和 +/=;:,，放進屬性很安全；保險起見還是去掉引號
+                insert_html(&format!("<img src=\"{}\" alt=\"\"><br>", d.replace(['"', '<', '>'], "")));
             }
         }
-        render_images();
         save_now().await;
         msg("");
     });
@@ -212,13 +246,21 @@ fn files_of(list: Option<web_sys::FileList>) -> Vec<File> {
 pub fn start() {
     on_click("note-close", close);
     on_click("note-done", close);
-    listen(&el("note-text"), "input", |_| save_soon());
+    on_click("note-upload", || el("note-file").click());
+    let ed = editor();
+    listen(&ed, "input", |_| {
+        remember_caret();
+        save_soon();
+    });
+    for ev in ["keyup", "mouseup", "blur"] {
+        listen(&ed, ev, |_| remember_caret());
+    }
     listen(&el("note-title"), "input", |_| save_soon());
     listen(&el("note-title"), "keydown", |e| {
         let k: &KeyboardEvent = e.unchecked_ref();
         if k.key() == "Enter" && !k.is_composing() {
             e.prevent_default();
-            let _ = text_area().focus();
+            let _ = editor().focus();
         }
     });
     listen(&el("note-file"), "change", |_| {
@@ -226,10 +268,11 @@ pub fn start() {
         add_files(files_of(inp.files()));
         inp.set_value("");
     });
-    // 貼上圖片（純文字照常貼進筆記）
-    listen(&el("note-dialog"), "paste", |e| {
+    // 貼上：圖片直接放進筆記；文字一律用純文字貼（不帶其他網頁的格式）
+    listen(&ed, "paste", |e| {
         let ev: &ClipboardEvent = e.unchecked_ref();
         let Some(dt) = ev.clipboard_data() else { return };
+        e.prevent_default();
         let items = dt.items();
         let files: Vec<File> = (0..items.length())
             .filter_map(|i| items.get(i))
@@ -237,11 +280,23 @@ pub fn start() {
             .filter_map(|it| it.get_as_file().ok().flatten())
             .collect();
         if !files.is_empty() {
+            remember_caret();
+            add_files(files);
+        } else if let Ok(t) = dt.get_data("text/plain") {
+            insert_text(&t);
+        }
+    });
+    // 主題欄位貼上圖片：也放進筆記
+    listen(&el("note-title"), "paste", |e| {
+        let ev: &ClipboardEvent = e.unchecked_ref();
+        let Some(dt) = ev.clipboard_data() else { return };
+        let files = files_of(dt.files());
+        if !files.is_empty() {
             e.prevent_default();
             add_files(files);
         }
     });
-    // 把圖片檔拖進視窗
+    // 把圖片檔拖進視窗：放進筆記
     listen(&el("note-dialog"), "dragover", |e| {
         let ev: &DragEvent = e.unchecked_ref();
         if ev.data_transfer().is_some_and(|d| d.types().includes(&"Files".into(), 0)) {
@@ -250,10 +305,26 @@ pub fn start() {
     });
     listen(&el("note-dialog"), "drop", |e| {
         let ev: &DragEvent = e.unchecked_ref();
-        let files = files_of(ev.data_transfer().and_then(|d| d.files()));
+        let Some(dt) = ev.data_transfer() else { return };
+        let files = files_of(dt.files());
         if !files.is_empty() {
             e.prevent_default();
             add_files(files);
+        } else if editor().contains(e.target().and_then(|t| t.dyn_into::<web_sys::Node>().ok()).as_ref()) {
+            // 拖進來的文字也只收純文字
+            e.prevent_default();
+            if let Ok(t) = dt.get_data("text/plain") {
+                let _ = editor().focus();
+                insert_text(&t);
+            }
+        }
+    });
+    // 點筆記裡的圖片：放大
+    listen(&ed, "click", |e| {
+        if let Some(img) = e.target().and_then(|t| t.dyn_into::<HtmlImageElement>().ok()) {
+            let view = el("note-view");
+            view.query_selector("img").unwrap().unwrap().unchecked_into::<HtmlImageElement>().set_src(&img.src());
+            view.set_hidden(false);
         }
     });
     listen(&el("note-view"), "click", |_| el("note-view").set_hidden(true));

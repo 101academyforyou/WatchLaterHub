@@ -32,14 +32,30 @@ pub struct Todo {
 pub struct Note {
     #[serde(default)]
     pub text: String,
-    /// 圖片（data: 網址）
-    #[serde(default)]
+    /// 舊版：另外列在下方的圖片（data: 網址）。打開時會搬進 `html`
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub images: Vec<String>,
+    /// 筆記內容（文字和圖片混排的 HTML，只有文字、換行和 <img>）
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub html: String,
 }
 
 impl Note {
     pub fn is_empty(&self) -> bool {
-        self.text.trim().is_empty() && self.images.is_empty()
+        self.text.trim().is_empty() && self.images.is_empty() && !self.html.contains("<img")
+    }
+
+    /// 編輯區要顯示的 HTML（舊版只有文字和下方圖片的筆記，轉成混排）
+    pub fn to_html(&self) -> String {
+        if !self.html.is_empty() {
+            return self.html.clone();
+        }
+        let esc = self.text.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+        let mut out = esc.replace('\n', "<br>");
+        for src in &self.images {
+            out.push_str(&format!("<img src=\"{}\">", src.replace('"', "")));
+        }
+        out
     }
 }
 
@@ -1009,6 +1025,16 @@ pub use view::{close, start};
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn note_html_from_old_format() {
+        let old = Note { text: "a<b\n第二行".into(), images: vec!["data:image/png;base64,AAA".into()], html: String::new() };
+        assert_eq!(old.to_html(), "a&lt;b<br>第二行<img src=\"data:image/png;base64,AAA\">");
+        assert!(!old.is_empty());
+        let new = Note { text: String::new(), images: vec![], html: "<img src=\"data:x\">".into() };
+        assert!(!new.is_empty());
+        assert!(Note::default().is_empty());
+    }
 
     fn ids(v: &[&Todo]) -> Vec<String> {
         v.iter().map(|t| t.id.clone()).collect()

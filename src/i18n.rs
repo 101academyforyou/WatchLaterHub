@@ -613,7 +613,7 @@ pub mod page {
     use wasm_bindgen::JsCast;
     use web_sys::{Element, MutationObserver, MutationObserverInit, MutationRecord, Node};
 
-    const ATTRS: [&str; 4] = ["title", "placeholder", "aria-label", "alt"];
+    const ATTRS: [&str; 5] = ["title", "placeholder", "aria-label", "alt", "data-placeholder"];
 
     fn local_storage() -> Option<web_sys::Storage> {
         web_sys::window()?.local_storage().ok().flatten()
@@ -632,6 +632,10 @@ pub mod page {
         let e = if n.node_type() == Node::ELEMENT_NODE { Some(n.clone().unchecked_into::<Element>()) } else { n.parent_element() };
         let Some(e) = e else { return false };
         if matches!(e.tag_name().as_str(), "SCRIPT" | "STYLE" | "TEXTAREA") {
+            return true;
+        }
+        // 可編輯區（TODO 筆記）裡是使用者寫的內容
+        if e.closest("[contenteditable]").ok().flatten().is_some() {
             return true;
         }
         e.closest("[data-nt]").ok().flatten().is_some()

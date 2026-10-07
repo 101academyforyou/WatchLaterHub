@@ -365,20 +365,17 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 .todo-note.has { opacity: 1; filter: none; }
 @media (hover: none) { .todo-note { opacity: .8; } }
 
-/* TODO 筆記視窗 */
-.note-dialog { width: min(560px, calc(100% - 32px)); }
-.note-dialog textarea { min-height: 160px; margin-top: 10px; }
-.note-imgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
-.note-img { position: relative; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; background: var(--pill); }
-.note-img img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
-.note-img .bm-del {
-  position: absolute; top: 4px; right: 4px; margin: 0; width: 24px; height: 24px;
-  background: rgba(0,0,0,.55); color: #fff; opacity: 0;
+/* TODO 筆記視窗：筆記區可以直接放圖片 */
+.note-dialog { width: min(600px, calc(100% - 32px)); }
+.note-editor {
+  min-height: 180px; max-height: 55vh; overflow-y: auto; margin-top: 10px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg);
+  font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; cursor: text;
 }
-.note-img:hover .bm-del, .note-img .bm-del:focus-visible { opacity: 1; }
-.note-img .bm-del:hover { background: rgba(0,0,0,.75); color: #fff; }
-@media (hover: none) { .note-img .bm-del { opacity: 1; } }
-.note-dialog label.btn { display: inline-flex; align-items: center; box-sizing: border-box; cursor: pointer; }
+.note-editor:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.note-editor:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
+.note-editor img { display: block; max-width: 100%; max-height: 320px; margin: 6px 0; border-radius: 8px; cursor: zoom-in; }
+.note-editor img:hover { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); }
 .note-view {
   position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,.8); cursor: zoom-out;
