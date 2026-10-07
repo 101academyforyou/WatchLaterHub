@@ -570,6 +570,11 @@ pub fn start() {
         spawn(async {
             render_list().await;
             render_yt(true).await;
+            // 沒有「立即同步」按鈕了：打開收藏時自動同步勾選的清單
+            let s = youtube::settings().await;
+            if s.connected && !s.sources.is_empty() {
+                resync_soon();
+            }
         });
     });
     on_click("close-manage", || dialog("manage").close());
@@ -619,18 +624,6 @@ pub fn start() {
             }
             chrome::clipboard_write(v.trim()).await;
             text("msg", &format!("已複製 {n} 個連結 ✓"));
-        })
-    });
-    on_click("yt-sync", || {
-        spawn(async {
-            let btn: HtmlButtonElement = by_id("yt-sync");
-            btn.set_disabled(true);
-            text("yt-status", "同步中…");
-            let _ = youtube::sync().await;
-            btn.set_disabled(false);
-            yt_status().await;
-            render().await;
-            render_list().await;
         })
     });
     on_click("yt-disconnect", || {
