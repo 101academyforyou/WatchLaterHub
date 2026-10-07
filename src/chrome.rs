@@ -91,6 +91,10 @@ extern "C" {
     #[wasm_bindgen(js_namespace = ["navigator", "geolocation"], js_name = getCurrentPosition)]
     fn geo_get_current(success: &js_sys::Function, error: &js_sys::Function, opts: JsValue);
 
+    // chrome.cookies（manifest 要有 "cookies" 權限）
+    #[wasm_bindgen(js_namespace = ["chrome", "cookies"], js_name = get, catch)]
+    async fn cookies_get_raw(details: JsValue) -> Result<JsValue, JsValue>;
+
     // 全域 fetch（新分頁與 service worker 都能用）
     #[wasm_bindgen(js_name = fetch)]
     fn fetch_raw(url: &str, init: JsValue) -> js_sys::Promise;
@@ -511,11 +515,19 @@ pub async fn fetch(url: &str, bearer: Option<&str>, method: &str) -> R<Resp> {
 }
 
 /// 回傳 (HTTP 狀態碼, 內文文字)。帶上 youtube.com 的 cookie，讓「不公開」清單也讀得到
-pub async fn fetch_text(url: &str, method: &str, json_body: Option<&str>) -> R<(u16, String)> {
+/// `headers`：額外的 HTTP 標頭（例如讀取「稍後觀看」時的登入驗證）
+pub async fn fetch_text(url: &str, method: &str, json_body: Option<&str>, headers: &[(String, String)]) -> R<(u16, String)> {
     let mut init = serde_json::json!({ "method": method, "credentials": "include" });
+    let mut h = serde_json::Map::new();
     if let Some(b) = json_body {
         init["body"] = b.into();
-        init["headers"] = serde_json::json!({ "Content-Type": "application/json" });
+        h.insert("Content-Type".into(), "application/json".into());
+    }
+    for (k, v) in headers {
+        h.insert(k.clone(), v.clone().into());
+    }
+    if !h.is_empty() {
+        init["headers"] = h.into();
     }
     let r = JsFuture::from(fetch_raw(url, to_js(&init))).await.map_err(err_msg)?;
     let r: web_sys::Response = r.dyn_into().map_err(|_| "fetch 回傳格式錯誤".to_string())?;
@@ -525,6 +537,12 @@ pub async fn fetch_text(url: &str, method: &str, json_body: Option<&str>) -> R<(
         Err(_) => String::new(),
     };
     Ok((status, text))
+}
+
+/// 讀取某網址的 cookie 值（沒有或沒權限時回傳 None）
+pub async fn cookie(url: &str, name: &str) -> Option<String> {
+    let v = cookies_get_raw(to_js(&serde_json::json!({ "url": url, "name": name }))).await.ok()?;
+    from_js::<serde_json::Value>(&v)?["value"].as_str().map(String::from)
 }
 
 pub async fn clipboard_write(text: &str) {

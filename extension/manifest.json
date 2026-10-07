@@ -28,6 +28,7 @@
     "history",
     "geolocation",
     "nativeMessaging",
+    "cookies",
     "unlimitedStorage"
   ],
   "host_permissions": [
