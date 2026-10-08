@@ -1022,8 +1022,9 @@ pub(crate) mod view {
         web_sys::window()?.local_storage().ok().flatten()
     }
 
+    /// 預設開啟；使用者取消勾選後才不自動打開
     fn auto_open() -> bool {
-        local_storage().and_then(|s| s.get_item(AUTO_KEY).ok().flatten()).as_deref() == Some("1")
+        local_storage().and_then(|s| s.get_item(AUTO_KEY).ok().flatten()).as_deref() != Some("0")
     }
 
     fn set_open(open: bool) {
