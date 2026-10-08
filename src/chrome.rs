@@ -86,6 +86,12 @@ extern "C" {
     async fn tabs_create_raw(props: JsValue) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(js_namespace = ["chrome", "runtime"], js_name = getURL)]
     fn runtime_get_url(path: &str) -> String;
+    #[wasm_bindgen(js_namespace = ["chrome", "action"], js_name = setBadgeText)]
+    fn action_set_badge_text(details: JsValue);
+    #[wasm_bindgen(js_namespace = ["chrome", "action"], js_name = setBadgeBackgroundColor)]
+    fn action_set_badge_color(details: JsValue);
+    #[wasm_bindgen(js_namespace = ["chrome", "action"], js_name = setTitle)]
+    fn action_set_title(details: JsValue);
 
     // navigator.geolocation（manifest 要有 "geolocation" 權限）
     #[wasm_bindgen(js_namespace = ["navigator", "geolocation"], js_name = getCurrentPosition)]
@@ -431,6 +437,27 @@ async fn current_tab() -> Option<(f64, f64)> {
     let id = Reflect::get(&t, &"id".into()).ok()?.as_f64()?;
     let index = Reflect::get(&t, &"index".into()).ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
     Some((id, index))
+}
+
+/// 工具列圖示上的小標記（空字串 = 不顯示）
+pub fn action_badge(text: &str, color: &str) {
+    action_set_badge_color(to_js(&serde_json::json!({ "color": color })));
+    action_set_badge_text(to_js(&serde_json::json!({ "text": text })));
+}
+
+/// 工具列圖示的提示文字
+pub fn action_title(title: &str) {
+    action_set_title(to_js(&serde_json::json!({ "title": title })));
+}
+
+/// 擴充功能裡某個檔案的完整網址
+pub fn extension_url(path: &str) -> String {
+    runtime_get_url(path)
+}
+
+/// 把某個分頁換到 `url`
+pub async fn tabs_set_url(tab_id: f64, url: &str) {
+    let _ = tabs_update_raw(tab_id, to_js(&serde_json::json!({ "url": url }))).await;
 }
 
 /// 在這個分頁開啟（chrome:// 等網址一般連結打不開，所以用 chrome.tabs）

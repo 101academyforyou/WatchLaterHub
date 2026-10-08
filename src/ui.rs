@@ -559,6 +559,9 @@ pub fn start() {
     // AI 模式：有文字就直接問，空白就打開 AI 模式首頁
     on_click("ai", || go(&[("udm", "50")], Some("https://www.google.com/search?udm=50")));
 
+    // 左上的 WatchLaterHub 圖示：改用 Chrome 原本的新分頁
+    on_click("ntp-off", || spawn(crate::ntp::switch_to_chrome()));
+
     // 右側書籤
     crate::bookmarks::start();
     crate::bookbar::start();

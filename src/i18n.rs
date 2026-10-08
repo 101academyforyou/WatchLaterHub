@@ -367,6 +367,10 @@ const EXACT: &[(&str, &str)] = &[
     ("這個待辦事項已經完成或被刪除了。", "This to-do is already done or was deleted."),
     ("打開 TODO 清單", "Open TODO list"),
     ("知道了", "Got it"),
+    // 切換新分頁
+    ("改用 Chrome 原本的新分頁（按瀏覽器工具列的 WatchLaterHub 圖示可以恢復）", "Switch to Chrome's original new tab (click the WatchLaterHub icon in the toolbar to switch back)"),
+    ("WatchLaterHub 已暫停，正在使用 Chrome 原本的新分頁（按一下恢復）", "WatchLaterHub is paused; using Chrome's original new tab (click to turn back on)"),
+    ("WatchLaterHub（按一下改用 Chrome 原本的新分頁）", "WatchLaterHub (click to use Chrome's original new tab)"),
     // 右鍵選單
     ("加入 WatchLaterHub", "Add to WatchLaterHub"),
     ("把這部影片加入 WatchLaterHub", "Add this video to WatchLaterHub"),

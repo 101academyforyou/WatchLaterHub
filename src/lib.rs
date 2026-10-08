@@ -17,6 +17,7 @@ mod bookmarks;
 mod chrome;
 mod drag;
 mod i18n;
+mod ntp;
 mod reminder_page;
 mod store;
 mod todo_note;
@@ -45,6 +46,7 @@ mod exports {
         // 舊版的寄信功能已移除：清掉當時存的 Gmail 授權
         chrome::remove(&["gmToken", "gmEmail"]).await;
         crate::i18n::set_en(chrome::load_lang_en().await);
+        crate::ntp::refresh_action().await;
         let [(page_id, page_title), (link_id, link_title)] = chrome::MENUS;
         chrome::context_menu(page_id, &crate::i18n::tr(page_title), "page", "documentUrlPatterns", YT_PATTERNS);
         chrome::context_menu(link_id, &crate::i18n::tr(link_title), "link", "targetUrlPatterns", YT_PATTERNS);
@@ -52,8 +54,17 @@ mod exports {
         todo::reminders::sync_alarms().await;
     }
 
+    /// 工具列圖示：切換 WatchLaterHub ⇄ Chrome 原本的新分頁
+    #[wasm_bindgen]
+    pub async fn on_action_click(tab_id: f64, url: String) {
+        crate::i18n::set_en(chrome::load_lang_en().await);
+        crate::ntp::on_action_click(tab_id, url).await;
+    }
+
     #[wasm_bindgen]
     pub async fn on_startup() {
+        crate::i18n::set_en(chrome::load_lang_en().await);
+        crate::ntp::refresh_action().await;
         todo::reminders::sync_alarms().await;
     }
 

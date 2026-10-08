@@ -47,6 +47,9 @@ body {
 .chip:hover { filter: brightness(.96); }
 #count { color: var(--muted); }
 .lang-chip { min-width: 44px; font-weight: 500; }
+.ntp-btn { flex: none; display: inline-flex; padding: 4px; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.ntp-btn img { width: 26px; height: 26px; display: block; }
+.ntp-btn:hover { background: var(--pill); }
 
 /* 頂列左側的書籤列：放不下的項目換到看不見的第二行，收進「»」 */
 .bbar {
