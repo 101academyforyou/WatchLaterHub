@@ -72,7 +72,6 @@ async fn render() {
     if BUSY.with(|b| b.borrow().contains(&v.id)) {
         hide("vai-go", true);
         hide("vai-points", true);
-        hide("vai-src", true);
         return status("AI 整理中…");
     }
     let en = crate::i18n::is_en();
@@ -110,7 +109,6 @@ fn show_points(c: Option<&Cached>) {
     ul.set_inner_html("");
     hide("vai-go", c.is_some());
     hide("vai-points", c.is_none());
-    hide("vai-src", c.is_none());
     let Some(c) = c else { return };
     let doc = crate::ui::doc();
     for p in &c.points {
@@ -118,7 +116,6 @@ fn show_points(c: Option<&Cached>) {
         li.set_text_content(Some(p));
         ul.append_child(&li).unwrap();
     }
-    text("vai-src", if c.captions { "依字幕整理" } else { "依影片說明整理（沒有字幕）" });
 }
 
 async fn summarize() {
