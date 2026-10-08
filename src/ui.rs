@@ -124,6 +124,30 @@ fn exact_tr(cell: &str) -> String {
     }
 }
 
+// ---------- 新分頁要打開哪個面板 ----------
+
+/// 記住使用者最後開著的面板（todo／bm／recent／apps／none），新分頁打開時維持那個狀態。
+/// 存在 localStorage，啟動時同步讀取，畫面不會先閃別的面板。
+const LAST_PANEL_KEY: &str = "lastPanel";
+const PANELS: [&str; 4] = ["todo", "bm", "recent", "apps"];
+
+fn local_storage() -> Option<web_sys::Storage> {
+    web_sys::window()?.local_storage().ok().flatten()
+}
+
+/// 上次的面板；第一次使用時是 TODO
+pub(crate) fn last_panel() -> String {
+    local_storage().and_then(|s| s.get_item(LAST_PANEL_KEY).ok().flatten()).unwrap_or_else(|| "todo".into())
+}
+
+/// 記下目前開著的面板（只在使用者按頂列按鈕或 ✕ 時記；點外面自動收起不算）
+fn remember_panel() {
+    let open = PANELS.iter().find(|id| !el(id).hidden()).copied().unwrap_or("none");
+    if let Some(s) = local_storage() {
+        let _ = s.set_item(LAST_PANEL_KEY, open);
+    }
+}
+
 // ---------- 清單裡的搜尋框（TODO、書籤、最近共用） ----------
 
 /// 搜尋框目前的文字
@@ -569,6 +593,29 @@ pub fn start() {
     crate::todo::start();
     crate::recent::start();
     crate::apps::start();
+
+    // 新分頁維持上次的面板（TODO 和書籤在各自的 start() 裡打開）
+    for id in PANELS {
+        for btn in [format!("{id}-toggle"), format!("{id}-close")] {
+            listen(&el(&btn), "click", |_| timeout(100, remember_panel));
+        }
+    }
+    let focus_search = || {
+        if let Some(q) = doc().get_element_by_id("q") {
+            let _ = q.unchecked_into::<HtmlElement>().focus();
+        }
+    };
+    match last_panel().as_str() {
+        "recent" if el("todo").hidden() => {
+            crate::recent::open();
+            focus_search();
+        }
+        "apps" if el("todo").hidden() => {
+            crate::apps::open();
+            focus_search();
+        }
+        _ => {}
+    }
 
     // 影片
     on_click("shuffle", || spawn(show_random(None)));

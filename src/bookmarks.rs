@@ -12,7 +12,6 @@ use web_sys::{
     HtmlOptionElement, HtmlSelectElement, KeyboardEvent, MouseEvent,
 };
 
-const PANEL_KEY: &str = "bmPanel"; // 面板開或關
 const OPEN_KEY: &str = "bmOpen"; // 展開中的資料夾 id
 const BAR_ID: &str = "1"; // Chrome 的「書籤列」
 const LAST_FOLDER_KEY: &str = "bmLastFolder"; // 上次存到哪個資料夾
@@ -672,7 +671,6 @@ async fn set_panel(open: bool) {
         crate::ui::close_panels_except("bm");
     }
     apply_panel(open);
-    chrome::set(&[(PANEL_KEY, to_js(&open))]).await;
     if open {
         render_tree().await;
     }
@@ -739,9 +737,9 @@ pub fn start() {
     });
 
     spawn(async {
-        // 已經有別的面板開著（例如從提醒視窗打開 TODO）就不要再打開書籤
+        // 新分頁維持上次的面板；已經有別的面板開著（例如從提醒視窗打開 TODO）就不要再打開書籤
         let others_open = !el("todo").hidden() || !el("recent").hidden();
-        let open: bool = chrome::get_or(PANEL_KEY, true).await && !others_open;
+        let open = crate::ui::last_panel() == "bm" && !others_open;
         apply_panel(open);
         if open {
             render_tree().await;

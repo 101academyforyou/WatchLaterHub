@@ -581,6 +581,10 @@ mod view {
         }
     }
 
+    pub fn open() {
+        set_open(true);
+    }
+
     pub fn close() {
         if is_open() {
             set_open(false);
@@ -645,7 +649,7 @@ mod view {
     }
 }
 
-pub use view::{close, start};
+pub use view::{close, open, start};
 
 #[cfg(test)]
 mod tests {

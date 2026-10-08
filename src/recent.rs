@@ -499,6 +499,10 @@ mod view {
         !el("recent").hidden()
     }
 
+    pub fn open() {
+        set_open(true);
+    }
+
     /// 被別的面板打開時關掉自己
     pub fn close() {
         if is_open() {
@@ -605,7 +609,7 @@ mod view {
     }
 }
 
-pub use view::{close, start};
+pub use view::{close, open, start};
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WatchLaterHub",
-  "version": "4.5.0",
+  "version": "4.5.1",
   "description": "__MSG_description__",
   "default_locale": "en",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmxpqEFClyY7YQ4woSqW4fwTEx7yc+/qNDTfYJjIJULs4N4oVDrS3pFuuFs033/cpOKrStFcjzJZelur9Pm10/AtALhTc62S7N0jQNIGc72y8HQdWOpgLffK+FAufGq+rTqiG5WqlWR+GjVVlLserSW8zW4rz1EYw2UoKHScPJ9BgOQlxW5wYLVgJutDtlixiJStP93qhmrNl1e16l6sr0wEpCg9s3KEyK6tZVgdEwJbzbANTxOq2CDVXr29+27vhuFD26NoX0yDnHcG8FzoypVIxLZ1JrjVJqZ0Mq13ibKFLTZ0tc1zmGUobRJtTT8BiikwjCZvjiEBj1qpECNRwTQIDAQAB",

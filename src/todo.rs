@@ -1115,8 +1115,8 @@ pub(crate) mod view {
         if loc.hash().unwrap_or_default() == "#todo" {
             let _ = web_sys::window().unwrap().history().and_then(|h| h.replace_state_with_url(&JsValue::NULL, "", Some("newtab.html")));
             set_open(true);
-        } else {
-            // 每開一個新分頁都先打開 TODO（其他面板關閉）；游標留在 Google 搜尋框，照樣可以直接打字搜尋
+        } else if crate::ui::last_panel() == "todo" {
+            // 新分頁維持上次的面板（第一次使用是 TODO）；游標留在 Google 搜尋框，照樣可以直接打字搜尋
             set_open(true);
             if let Some(q) = doc().get_element_by_id("q") {
                 let _ = q.unchecked_into::<HtmlElement>().focus();
