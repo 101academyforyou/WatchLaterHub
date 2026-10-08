@@ -515,7 +515,7 @@ pub(crate) mod view {
         }));
         el("todo-clear").unchecked_into::<HtmlButtonElement>().set_disabled(done == 0);
         el("todo-export").unchecked_into::<HtmlButtonElement>().set_disabled(list.is_empty());
-        hide("todo-foot", list.is_empty());
+        hide("todo-actions", list.is_empty());
 
         let ul = el("todo-list");
         ul.set_inner_html("");
@@ -1015,6 +1015,17 @@ pub(crate) mod view {
         }
     }
 
+    /// 「開新分頁時自動打開」存在 localStorage（同步讀取，打開時畫面不會先閃一下別的面板）
+    const AUTO_KEY: &str = "todoAutoOpen";
+
+    fn local_storage() -> Option<web_sys::Storage> {
+        web_sys::window()?.local_storage().ok().flatten()
+    }
+
+    fn auto_open() -> bool {
+        local_storage().and_then(|s| s.get_item(AUTO_KEY).ok().flatten()).as_deref() == Some("1")
+    }
+
     fn set_open(open: bool) {
         if open {
             crate::ui::close_panels_except("todo");
@@ -1110,11 +1121,26 @@ pub(crate) mod view {
 
         spawn(async { render_list(&load().await) });
 
+        // 開新分頁時自動打開
+        let auto: HtmlInputElement = input("todo-auto");
+        auto.set_checked(auto_open());
+        listen(&auto, "change", |_| {
+            if let Some(s) = local_storage() {
+                let _ = s.set_item(AUTO_KEY, if input("todo-auto").checked() { "1" } else { "0" });
+            }
+        });
+
         // 從提醒通知點進來（newtab.html#todo）：直接打開清單
         let loc = web_sys::window().unwrap().location();
         if loc.hash().unwrap_or_default() == "#todo" {
             let _ = web_sys::window().unwrap().history().and_then(|h| h.replace_state_with_url(&JsValue::NULL, "", Some("newtab.html")));
             set_open(true);
+        } else if auto_open() {
+            // 只打開 TODO（其他面板關閉）；游標留在 Google 搜尋框，開新分頁照樣可以直接打字搜尋
+            set_open(true);
+            if let Some(q) = doc().get_element_by_id("q") {
+                let _ = q.unchecked_into::<HtmlElement>().focus();
+            }
         }
     }
 }

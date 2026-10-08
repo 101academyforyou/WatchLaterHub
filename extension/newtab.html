@@ -151,9 +151,10 @@
     </div>
     <div class="panel-search"><svg class="ps-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="todo-search" type="search" placeholder="搜尋待辦事項" autocomplete="off" spellcheck="false" aria-label="搜尋待辦事項"></div>
     <ul id="todo-list" class="todo-list"></ul>
-    <div id="todo-foot" class="todo-foot" hidden>
+    <div id="todo-foot" class="todo-foot">
+      <label class="todo-auto" title="每開一個新分頁就先打開 TODO 清單，其他面板先關閉"><input id="todo-auto" type="checkbox"> 開新分頁時自動打開</label>
       <span id="todo-summary"></span>
-      <span class="actions">
+      <span id="todo-actions" class="actions">
         <button id="todo-export" class="chip" type="button" title="把 TODO 清單下載成 CSV（可用 Excel 開啟）">匯出 CSV</button>
         <button id="todo-clear" class="chip" type="button">清除已完成</button>
       </span>

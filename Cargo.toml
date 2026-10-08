@@ -1,6 +1,6 @@
 [package]
 name = "watchlaterhub"
-version = "4.4.1"
+version = "4.4.2"
 edition = "2021"
 description = "WatchLaterHub: a Chrome new-tab page that shows a random video from your YouTube favorites, with Google search"
 license = "MIT"
