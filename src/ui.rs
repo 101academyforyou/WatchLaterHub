@@ -135,9 +135,39 @@ fn local_storage() -> Option<web_sys::Storage> {
     web_sys::window()?.local_storage().ok().flatten()
 }
 
-/// 上次的面板；第一次使用時是 TODO
+/// 上次的面板；第一次使用時是 TODO。按了 TODO 底部的圖示（固定）後一律是 TODO
 pub(crate) fn last_panel() -> String {
+    if todo_pinned() {
+        return "todo".into();
+    }
     local_storage().and_then(|s| s.get_item(LAST_PANEL_KEY).ok().flatten()).unwrap_or_else(|| "todo".into())
+}
+
+/// TODO 底部的 WatchLaterHub 圖示：固定後，不論上次開著什麼，新分頁都只打開 TODO
+const TODO_PIN_KEY: &str = "todoPinned";
+
+fn todo_pinned() -> bool {
+    local_storage().and_then(|s| s.get_item(TODO_PIN_KEY).ok().flatten()).as_deref() == Some("1")
+}
+
+fn render_todo_pin() {
+    let on = todo_pinned();
+    let btn = el("todo-pin");
+    let _ = btn.class_list().toggle_with_force("on", on);
+    let _ = btn.set_attribute("aria-pressed", if on { "true" } else { "false" });
+    btn.set_title(&crate::i18n::tr(if on {
+        "已設定：開新分頁一律打開 TODO（再點一下取消）"
+    } else {
+        "TODO 在新分頁維持開啟"
+    }));
+}
+
+fn toggle_todo_pin() {
+    let on = !todo_pinned();
+    if let Some(s) = local_storage() {
+        let _ = if on { s.set_item(TODO_PIN_KEY, "1") } else { s.remove_item(TODO_PIN_KEY) };
+    }
+    render_todo_pin();
 }
 
 /// 記下目前開著的面板（只在使用者按頂列按鈕或 ✕ 時記；點外面自動收起不算）
@@ -596,6 +626,10 @@ pub fn start() {
     crate::recent::start();
     crate::apps::start();
     crate::ai::start();
+
+    // TODO 底部的圖示：固定「新分頁只打開 TODO」
+    render_todo_pin();
+    on_click("todo-pin", toggle_todo_pin);
 
     // 新分頁維持上次的面板（TODO 和書籤在各自的 start() 裡打開）
     for id in PANELS {

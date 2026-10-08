@@ -327,6 +327,17 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
   padding: 8px 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted);
 }
 .todo-foot .chip:disabled { opacity: .5; cursor: default; }
+.todo-foot .actions { display: inline-flex; align-items: center; gap: 8px; }
+/* TODO 底部的圖示：點一下固定「新分頁只打開 TODO」 */
+.todo-pin {
+  display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0;
+  border: 1px solid transparent; border-radius: 8px; background: none; cursor: pointer;
+}
+.todo-pin img { width: 20px; height: 20px; opacity: .45; filter: grayscale(1); transition: opacity .15s, filter .15s; }
+.todo-pin:hover { background: var(--pill); }
+.todo-pin:hover img { opacity: .8; }
+.todo-pin.on { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.todo-pin.on img { opacity: 1; filter: none; }
 #todo-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 600px) { .todo { right: 16px; } }
 

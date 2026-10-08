@@ -30,6 +30,9 @@ fn has_cjk(s: &str) -> bool {
 
 /// 整句對照（左：中文，右：英文）
 const EXACT: &[(&str, &str)] = &[
+    // TODO 底部的固定圖示
+    ("TODO 在新分頁維持開啟", "Keep TODO open in new tabs"),
+    ("已設定：開新分頁一律打開 TODO（再點一下取消）", "On: new tabs always open TODO (click again to turn off)"),
     // 頂列
     ("☰ 收藏", "☰ Saved"),
     ("收藏", "Saved"),
