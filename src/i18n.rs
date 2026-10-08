@@ -386,6 +386,11 @@ const EXACT: &[(&str, &str)] = &[
     ("這部影片沒有字幕或說明，無法整理重點", "This video has no captions or description to summarize."),
     ("AI 沒有產生內容", "The AI returned nothing."),
     ("下載 AI 模型（只需第一次）", "Download AI model (first time only)"),
+    ("下載翻譯模型（只需第一次）", "Download translation model (first time only)"),
+    ("這部影片不是英文，第一次要先下載翻譯模型", "This video isn't in English. A translation model needs to be downloaded once."),
+    ("這部影片沒有字幕，說明也太短，無法整理重點", "No captions and too little description to summarize."),
+    ("這部影片的語言目前無法用 AI 整理", "This video's language isn't supported by the built-in AI yet."),
+    ("翻譯影片內容…", "Translating the video text…"),
     ("第一次使用要先下載 Chrome 內建的 AI 模型，檔案較大，可能需要幾分鐘（下載時可以繼續使用其他功能）。只有第一次比較久，之後每部影片都會自動顯示重點，不用再按。", "The first time, Chrome needs to download its built-in AI model. It's large and may take a few minutes (you can keep using everything else meanwhile). Only the first time is slow — after that, key points appear automatically for every video."),
 ];
 

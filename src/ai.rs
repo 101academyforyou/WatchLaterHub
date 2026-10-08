@@ -24,13 +24,22 @@ thread_local! {
     static BUSY: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
     /// 這次開新分頁自動整理失敗過的影片（不再自動重試，改顯示按鈕）
     static FAILED: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    /// 上次因為要下載「影片語言 → 英文」翻譯模型而停下的語言；下次按按鈕時立刻開始下載
+    static NEED_INPUT_LANG: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
 /// 整理過的重點存在 chrome.storage，再看到同一部影片就不用重算
-const CACHE_KEY: &str = "aiSummaries";
+/// （v2：舊版把中文內容直接丟給 AI，整理出的亂碼不再沿用）
+const CACHE_KEY: &str = "aiSummaries2";
 const CACHE_MAX: usize = 30;
-/// 送給 AI 的文字上限（還會依模型的 inputQuota 再縮短）
-const MAX_INPUT_CHARS: usize = 12_000;
+/// 字幕或說明少於這個字數就不整理（內容太少，AI 只會亂猜）
+const MIN_INPUT_CHARS: usize = 80;
+/// 要先翻成英文、才能下載模型時的錯誤（顯示「下載翻譯模型」按鈕）
+const NEED_DOWNLOAD: &str = "這部影片不是英文，第一次要先下載翻譯模型";
+/// 內容太少：按「重試」也沒用，不顯示按鈕
+const TOO_SHORT: &str = "這部影片沒有字幕，說明也太短，無法整理重點";
+/// 送給 AI 的文字上限：只送前面約 3,000 字，整理得比較快（還會依模型的 inputQuota 再縮短）
+const MAX_INPUT_CHARS: usize = 3_000;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct Cached {
@@ -133,10 +142,12 @@ async fn summarize() {
     let translator = if en {
         None
     } else {
-        Some(invoke_api("Translator", "create", &[with_monitor(json!({ "sourceLanguage": "en", "targetLanguage": "zh-Hant" }))]))
+        Some(create_translator("en", "zh-Hant"))
     };
+    // 上次停在「要下載影片語言的翻譯模型」：趁使用者剛按了按鈕，立刻開始下載
+    let input_translator = NEED_INPUT_LANG.with(|n| n.borrow_mut().take()).map(|lang| (lang.clone(), create_translator(&lang, "en")));
 
-    let res = run(&v, summarizer).await;
+    let res = run(&v, summarizer, input_translator).await;
     let here = || current().is_some_and(|c| c.id == v.id);
     match res {
         Ok(mut c) => {
@@ -167,9 +178,9 @@ async fn summarize() {
             chrome::warn(&format!("WatchLaterHub AI summary failed: {e}"));
             FAILED.with(|f| f.borrow_mut().push(v.id.clone()));
             if here() {
-                text("vai-go", "用 AI 整理重點");
-                hide("vai-go", false);
-                status(&format!("⚠ {e}"));
+                text("vai-go", if e == NEED_DOWNLOAD { "下載翻譯模型（只需第一次）" } else { "用 AI 整理重點" });
+                hide("vai-go", e == TOO_SHORT);
+                status(&if e == TOO_SHORT { e } else { format!("⚠ {e}") });
             }
         }
     }
@@ -177,7 +188,7 @@ async fn summarize() {
 }
 
 /// 讀影片 → 產生英文重點
-async fn run(v: &Video, summarizer: Result<JsValue, String>) -> Result<Cached, String> {
+async fn run(v: &Video, summarizer: Result<JsValue, String>, input_translator: Option<(String, Result<JsValue, String>)>) -> Result<Cached, String> {
     let status = |msg: &str| {
         if current().is_some_and(|c| c.id == v.id) {
             status(msg);
@@ -185,13 +196,48 @@ async fn run(v: &Video, summarizer: Result<JsValue, String>) -> Result<Cached, S
     };
     status("讀取影片資訊…");
     let (body, captions) = video_text(&v.id).await;
-    if body.trim().is_empty() {
-        return Err("這部影片沒有字幕或說明，無法整理重點".into());
+    if body.trim().chars().count() < MIN_INPUT_CHARS {
+        return Err(TOO_SHORT.into());
+    }
+    // 內建 AI 只看得懂英文（和西、日文）：中文等其他語言的內容先在電腦上翻成英文，
+    // 不然會整理出亂七八糟的句子
+    let mut title = format!("\"{}\" by {}", v.title, v.author);
+    let mut body = truncate_chars(&body, MAX_INPUT_CHARS).to_string();
+    let body_lang = script_lang(&body);
+    if body_lang.is_none() && script_lang(&title).is_some() {
+        // 內容是英文、標題不是：標題不翻譯，也不給 AI 看（避免整理出夾雜的文字）
+        title.clear();
+    }
+    if let Some(lang) = body_lang {
+        status("翻譯影片內容…");
+        let t = match input_translator.filter(|(l, _)| l == lang) {
+            Some((_, t)) => t,
+            None => match availability("Translator", json!({ "sourceLanguage": lang, "targetLanguage": "en" })).await.as_str() {
+                "available" => create_translator(lang, "en"),
+                "" | "unavailable" => return Err("這部影片的語言目前無法用 AI 整理".into()),
+                _ if user_active() => create_translator(lang, "en"),
+                _ => {
+                    NEED_INPUT_LANG.with(|n| *n.borrow_mut() = Some(lang.to_string()));
+                    return Err(NEED_DOWNLOAD.into());
+                }
+            },
+        };
+        let t = await_js(t?).await?;
+        let tr = |s: String| {
+            let t = t.clone();
+            async move { await_js(invoke(&t, "translate", &[JsValue::from_str(&s)])?).await?.as_string().ok_or_else(|| "翻譯失敗".to_string()) }
+        };
+        if !title.is_empty() {
+            title = tr(title).await?;
+        }
+        body = tr(body).await?;
+        let _ = invoke(&t, "destroy", &[]);
     }
     status("AI 整理中…");
     let s = await_js(summarizer?).await?;
     let input = fit_input(&s, &body).await;
-    let opts = to_js(&json!({ "context": format!("A YouTube video titled \"{}\" by {}.", v.title, v.author) }));
+    let context = if title.is_empty() { "A YouTube video.".to_string() } else { format!("A YouTube video: {title}.") };
+    let opts = to_js(&json!({ "context": context }));
     let out = await_js(invoke(&s, "summarize", &[JsValue::from_str(&input), opts])?).await;
     let _ = invoke(&s, "destroy", &[]);
     let points = parse_points(&out?.as_string().unwrap_or_default());
@@ -238,17 +284,29 @@ async fn video_text(id: &str) -> (String, bool) {
     let Some(player) = extract_json_after(&html, "ytInitialPlayerResponse = ") else { return (String::new(), false) };
     let desc = clean_description(player["videoDetails"]["shortDescription"].as_str().unwrap_or(""));
     let mut transcript = String::new();
-    if let Some(url) = pick_track(&player) {
-        if let Ok((200, body)) = chrome::fetch_text(&format!("{url}&fmt=json3"), "GET", None, &[]).await {
-            transcript = serde_json::from_str::<Value>(&body).map(|j| transcript_from_json3(&j)).unwrap_or_default();
+    if let Some((url, lang)) = pick_track(&player) {
+        // 不是英文字幕：先請 YouTube 自動翻成英文，拿不到再用原文（之後在電腦上翻）
+        let mut urls = vec![format!("{url}&fmt=json3")];
+        if !lang.starts_with("en") {
+            urls.insert(0, format!("{url}&fmt=json3&tlang=en"));
+        }
+        for u in urls {
+            if let Ok((200, body)) = chrome::fetch_text(&u, "GET", None, &[]).await {
+                transcript = serde_json::from_str::<Value>(&body).map(|j| transcript_from_json3(&j)).unwrap_or_default();
+            }
+            if !transcript.is_empty() {
+                break;
+            }
         }
     }
     let captions = !transcript.is_empty();
+    // 已有英文字幕時，其他語言的說明就不放（避免中英混雜）
+    let desc = if captions && script_lang(&desc).is_some() && script_lang(&transcript).is_none() { String::new() } else { desc };
     (build_input(&desc, &transcript), captions)
 }
 
-/// 選字幕：手動上傳的優先，其次英文，最後任一條（含自動產生的）
-pub fn pick_track(player: &Value) -> Option<String> {
+/// 選字幕：手動上傳的優先，其次英文，最後任一條（含自動產生的）。回傳 (網址, 語言)
+pub fn pick_track(player: &Value) -> Option<(String, String)> {
     let tracks = player["captions"]["playerCaptionsTracklistRenderer"]["captionTracks"].as_array()?;
     let manual = |t: &&Value| t["kind"].as_str() != Some("asr");
     let english = |t: &&Value| t["languageCode"].as_str().is_some_and(|l| l.starts_with("en"));
@@ -257,8 +315,41 @@ pub fn pick_track(player: &Value) -> Option<String> {
         .find(|t| manual(t) && english(t))
         .or_else(|| tracks.iter().find(manual))
         .or_else(|| tracks.first())
-        .and_then(|t| t["baseUrl"].as_str())
-        .map(String::from)
+        .and_then(|t| Some((t["baseUrl"].as_str()?.to_string(), t["languageCode"].as_str().unwrap_or("").to_string())))
+}
+
+/// 內容主要是哪種非拉丁文字：日文（有假名）、韓文、中文；英文等拉丁文字回傳 None
+pub fn script_lang(s: &str) -> Option<&'static str> {
+    let (mut latin, mut han, mut kana, mut hangul) = (0usize, 0usize, 0usize, 0usize);
+    for c in s.chars() {
+        match c {
+            '\u{3040}'..='\u{30ff}' => kana += 1,
+            '\u{ac00}'..='\u{d7af}' | '\u{1100}'..='\u{11ff}' => hangul += 1,
+            '\u{4e00}'..='\u{9fff}' | '\u{3400}'..='\u{4dbf}' => han += 1,
+            c if c.is_alphabetic() => latin += 1,
+            _ => {}
+        }
+    }
+    // 中日韓一個字約等於英文一個詞（約 5 個字母），所以乘 5 比較
+    let cjk = han + kana + hangul;
+    if cjk * 5 < latin {
+        return None;
+    }
+    Some(if kana * 10 > cjk { "ja" } else if hangul > han { "ko" } else { "zh" })
+}
+
+/// 使用者剛按過按鈕（Chrome 規定下載模型要在這之後）
+fn user_active() -> bool {
+    let nav = Reflect::get(&js_sys::global(), &"navigator".into()).unwrap_or(JsValue::UNDEFINED);
+    Reflect::get(&nav, &"userActivation".into())
+        .and_then(|u| Reflect::get(&u, &"isActive".into()))
+        .ok()
+        .and_then(|a| a.as_bool())
+        .unwrap_or(false)
+}
+
+fn create_translator(from: &str, to: &str) -> Result<JsValue, String> {
+    invoke_api("Translator", "create", &[with_monitor(json!({ "sourceLanguage": from, "targetLanguage": to }))])
 }
 
 /// YouTube 字幕（fmt=json3）→ 一整段文字
@@ -288,7 +379,7 @@ pub fn build_input(desc: &str, transcript: &str) -> String {
     match (desc.trim().is_empty(), transcript.trim().is_empty()) {
         (_, true) => desc.trim().to_string(),
         (true, false) => transcript.trim().to_string(),
-        (false, false) => format!("Description:\n{}\n\nTranscript:\n{}", truncate_chars(desc.trim(), 1500), transcript.trim()),
+        (false, false) => format!("Description:\n{}\n\nTranscript:\n{}", truncate_chars(desc.trim(), 500), transcript.trim()),
     }
 }
 
@@ -378,7 +469,10 @@ fn with_monitor(opts: Value) -> JsValue {
     let monitor = Closure::<dyn FnMut(JsValue)>::new(|m: JsValue| {
         let on_progress = Closure::<dyn FnMut(JsValue)>::new(|e: JsValue| {
             let loaded = Reflect::get(&e, &"loaded".into()).ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
-            status(&format!("下載 AI 模型中… {}%", (loaded * 100.0).round() as i64));
+            // 只在整理目前這部影片時顯示（避免蓋掉其他訊息）
+            if current().is_some_and(|v| BUSY.with(|b| b.borrow().contains(&v.id))) {
+                status(&format!("下載 AI 模型中… {}%", (loaded * 100.0).round() as i64));
+            }
         });
         let _ = invoke(&m, "addEventListener", &[JsValue::from_str("downloadprogress"), on_progress.into_js_value()]);
     });
@@ -404,12 +498,22 @@ mod tests {
             { "baseUrl": "zh", "languageCode": "zh-TW" },
             { "baseUrl": "en", "languageCode": "en-US" },
         ]}}});
-        assert_eq!(pick_track(&p).as_deref(), Some("en"));
+        assert_eq!(pick_track(&p), Some(("en".into(), "en-US".into())));
         let p = json!({ "captions": { "playerCaptionsTracklistRenderer": { "captionTracks": [
             { "baseUrl": "asr-en", "languageCode": "en", "kind": "asr" },
         ]}}});
-        assert_eq!(pick_track(&p).as_deref(), Some("asr-en"));
+        assert_eq!(pick_track(&p), Some(("asr-en".into(), "en".into())));
         assert_eq!(pick_track(&json!({})), None);
+    }
+
+    #[test]
+    fn languages() {
+        assert_eq!(script_lang("Learn Rust today, with examples"), None);
+        assert_eq!(script_lang("Python 開發環境介紹 Colab 免費 GPU"), Some("zh"));
+        assert_eq!(script_lang("今日はPythonの環境を紹介します"), Some("ja"));
+        assert_eq!(script_lang("오늘은 파이썬을 소개합니다"), Some("ko"));
+        // 英文為主、夾一兩個中文字
+        assert_eq!(script_lang("This talk covers DSMGA-II and genetic algorithms in depth (基因)"), None);
     }
 
     #[test]
