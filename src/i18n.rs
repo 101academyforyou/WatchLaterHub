@@ -151,8 +151,6 @@ const EXACT: &[(&str, &str)] = &[
     ("把 TODO 清單下載成 CSV（可用 Excel 開啟）", "Download the TODO list as CSV (opens in Excel)"),
     ("匯出 CSV", "Export CSV"),
     ("清除已完成", "Clear completed"),
-    ("開新分頁時自動打開", "Open on new tab"),
-    ("每開一個新分頁就先打開 TODO 清單，其他面板先關閉", "Open the TODO list on every new tab and close other panels"),
     ("還沒有待辦事項，在上面輸入後按 Enter", "No to-dos yet. Type above and press Enter"),
     ("找不到符合的待辦事項", "No matching to-dos"),
     ("點兩下編輯", "Double-click to edit"),

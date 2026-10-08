@@ -324,8 +324,6 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
   padding: 8px 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted);
 }
 .todo-foot .chip:disabled { opacity: .5; cursor: default; }
-.todo-auto { display: inline-flex; align-items: center; gap: 5px; flex: none; cursor: pointer; white-space: nowrap; }
-.todo-auto input { margin: 0; accent-color: var(--accent); }
 #todo-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 600px) { .todo { right: 16px; } }
 
