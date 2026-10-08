@@ -377,10 +377,24 @@ const EXACT: &[(&str, &str)] = &[
     // 其他
     ("剛剛", "just now"),
     ("沒有影片", "No videos"),
+    // 左側 AI 重點
+    ("這部影片在講什麼", "What's this video about?"),
+    ("用 AI 整理重點", "Summarize with AI"),
+    ("由 Chrome 內建 AI 在你的電腦上產生，可能有錯誤", "Generated on your computer by Chrome's built-in AI. It may make mistakes."),
+    ("讀取影片資訊…", "Reading video info…"),
+    ("AI 整理中…", "Summarizing…"),
+    ("翻譯中…", "Translating…"),
+    ("依字幕整理", "Based on captions"),
+    ("依影片說明整理（沒有字幕）", "Based on the description (no captions)"),
+    ("這部影片沒有字幕或說明，無法整理重點", "This video has no captions or description to summarize."),
+    ("AI 沒有產生內容", "The AI returned nothing."),
 ];
 
 /// 含變數的句子（左：中文樣式，右：英文樣式）
 const PATTERNS: &[(&str, &str)] = &[
+    // 左側 AI 重點
+    ("下載 AI 模型中… {n:n}%", "Downloading AI model… {n}%"),
+    ("瀏覽器不支援 {x}", "This browser doesn't support {x}"),
     // 收藏
     ("已同步 {n:n} 部 · {t}", "Synced {n} · {t}"),
     ("已登入：{x}", "Signed in: {x}"),

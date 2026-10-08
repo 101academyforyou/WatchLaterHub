@@ -211,6 +211,7 @@ async fn render() {
     hide("video", list.is_empty());
     if list.is_empty() {
         crate::bookmarks::set_current(None);
+        crate::ai::set_current(None);
     }
     hide("empty", !list.is_empty());
     if !list.is_empty() {
@@ -241,6 +242,7 @@ async fn show_random(list: Option<Vec<Video>>) {
     chrome::set(&[("lastId", to_js(&v.id))]).await;
 
     crate::bookmarks::set_current(Some(v.clone()));
+    crate::ai::set_current(Some(v.clone()));
     by_id::<HtmlImageElement>("v-img").set_src(&v.thumb("hqdefault"));
     by_id::<HtmlAnchorElement>("v-link").set_href(&v.watch_url());
     by_id::<HtmlAnchorElement>("v-title").set_href(&v.watch_url());
@@ -593,6 +595,7 @@ pub fn start() {
     crate::todo::start();
     crate::recent::start();
     crate::apps::start();
+    crate::ai::start();
 
     // 新分頁維持上次的面板（TODO 和書籤在各自的 start() 裡打開）
     for id in PANELS {
