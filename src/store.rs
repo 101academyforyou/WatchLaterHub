@@ -96,17 +96,37 @@ pub async fn remove(id: &str) {
     save_manual(&list).await;
 }
 
-/// 第一次安裝時放入預設收藏（只做一次）
+/// 第一次安裝時放入預設收藏；預設影片改版時，已安裝的使用者也套用增減（每個版本只做一次）
 pub async fn seed_defaults() {
-    if chrome::get_or("defaultsSeeded", false).await {
+    let seeded = chrome::get_or("defaultsSeeded", false).await;
+    let version: u32 = chrome::get_or("defaultsVersion", if seeded { 1 } else { 0 }).await;
+    if version >= config::DEFAULTS_VERSION {
         return;
     }
-    let mut list = get_manual().await;
+    let before = get_manual().await;
+    let mut added = vec![];
     for (id, title, author) in config::DEFAULT_VIDEOS {
-        if !list.iter().any(|v| v.id == *id) {
-            list.push(Video { added_at: Some(chrome::now()), ..Video::new(id, title, author) });
+        if before.iter().any(|v| v.id == *id) || (seeded && config::V1_DEFAULTS.contains(id)) {
+            continue;
+        }
+        let (title, author) = if title.is_empty() { fetch_info(id).await } else { (title.to_string(), author.to_string()) };
+        added.push(Video { id: id.to_string(), title, author, added_at: Some(chrome::now()) });
+    }
+    // 查標題要等網路：重新讀一次清單再寫回，避免蓋掉這段時間的變動或重複加入
+    let mut list = get_manual().await;
+    if seeded {
+        list.retain(|v| !config::REMOVED_DEFAULTS.contains(&v.id.as_str()));
+    }
+    for v in added {
+        if !list.iter().any(|x| x.id == v.id) {
+            list.push(v);
         }
     }
-    chrome::set(&[(KEY, to_js(&list)), ("defaultsSeeded", to_js(&true))]).await;
+    chrome::set(&[
+        (KEY, to_js(&list)),
+        ("defaultsSeeded", to_js(&true)),
+        ("defaultsVersion", to_js(&config::DEFAULTS_VERSION)),
+    ])
+    .await;
 }
 
