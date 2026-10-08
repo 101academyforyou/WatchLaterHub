@@ -388,6 +388,8 @@ const EXACT: &[(&str, &str)] = &[
     ("依影片說明整理（沒有字幕）", "Based on the description (no captions)"),
     ("這部影片沒有字幕或說明，無法整理重點", "This video has no captions or description to summarize."),
     ("AI 沒有產生內容", "The AI returned nothing."),
+    ("下載 AI 模型（只需第一次）", "Download AI model (first time only)"),
+    ("第一次使用要先下載 Chrome 內建的 AI 模型，檔案較大，可能需要幾分鐘（下載時可以繼續使用其他功能）。只有第一次比較久，之後每部影片都會自動顯示重點，不用再按。", "The first time, Chrome needs to download its built-in AI model. It's large and may take a few minutes (you can keep using everything else meanwhile). Only the first time is slow — after that, key points appear automatically for every video."),
 ];
 
 /// 含變數的句子（左：中文樣式，右：英文樣式）

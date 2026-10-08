@@ -812,6 +812,7 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 .vai-points li + li { margin-top: 6px; }
 .vai-note { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
 #vai-src { margin-top: 8px; }
+.vai-first { padding: 8px 10px; border-radius: 8px; background: var(--pill); color: var(--fg); }
 /* 影片左邊放不下（視窗不夠寬、或右側面板把中間內容往左推）時，不顯示 */
 @media (max-width: 1280px) { .vai { display: none !important; } }
 @media (max-width: 1400px) {

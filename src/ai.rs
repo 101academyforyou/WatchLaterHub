@@ -22,6 +22,8 @@ thread_local! {
     static AVAILABLE: Cell<bool> = const { Cell::new(false) };
     /// 正在整理的影片 ID
     static BUSY: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    /// 這次開新分頁自動整理失敗過的影片（不再自動重試，改顯示按鈕）
+    static FAILED: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
 }
 
 /// 整理過的重點存在 chrome.storage，再看到同一部影片就不用重算
@@ -77,6 +79,30 @@ async fn render() {
     let hit = cache().await.into_iter().find(|c| c.id == v.id && c.en == en);
     show_points(hit.as_ref());
     status("");
+    if hit.is_some() {
+        return hide("vai-first", true);
+    }
+    hide("vai-go", true); // 確認模型狀態前先不顯示按鈕，避免自動整理時閃一下
+    // 模型已經下載好：不用按，直接整理
+    let ready = models_ready(en).await;
+    if !current().is_some_and(|c| c.id == v.id) {
+        return; // 等待時換了影片，交給新的 render
+    }
+    let failed = FAILED.with(|f| f.borrow().contains(&v.id));
+    if ready && !failed {
+        hide("vai-first", true);
+        return Box::pin(summarize()).await;
+    }
+    // 第一次：要使用者按一下才能下載模型（Chrome 的規定）
+    text("vai-go", if ready { "用 AI 整理重點" } else { "下載 AI 模型（只需第一次）" });
+    hide("vai-go", false);
+    hide("vai-first", ready);
+}
+
+/// 需要的 AI 模型都已經在這台電腦上（不用下載、不用使用者按按鈕就能用）
+async fn models_ready(en: bool) -> bool {
+    availability("Summarizer", json!({ "type": "key-points", "format": "plain-text", "length": "short", "outputLanguage": "en" })).await == "available"
+        && (en || availability("Translator", json!({ "sourceLanguage": "en", "targetLanguage": "zh-Hant" })).await == "available")
 }
 
 fn show_points(c: Option<&Cached>) {
@@ -136,10 +162,15 @@ async fn summarize() {
             }
             // 翻譯失敗時存成英文，下次在中文模式還能再試翻譯
             save(&c).await;
+            if here() {
+                hide("vai-first", true);
+            }
         }
         Err(e) => {
             chrome::warn(&format!("WatchLaterHub AI summary failed: {e}"));
+            FAILED.with(|f| f.borrow_mut().push(v.id.clone()));
             if here() {
+                text("vai-go", "用 AI 整理重點");
                 hide("vai-go", false);
                 status(&format!("⚠ {e}"));
             }
@@ -311,11 +342,15 @@ fn api(name: &str) -> Option<JsValue> {
 }
 
 async fn summarizer_available() -> bool {
-    let Some(s) = api("Summarizer") else { return false };
-    let opts = to_js(&json!({ "type": "key-points", "format": "plain-text", "length": "short", "outputLanguage": "en" }));
-    match invoke(&s, "availability", &[opts]) {
-        Ok(p) => await_js(p).await.ok().and_then(|a| a.as_string()).is_some_and(|a| a != "unavailable"),
-        Err(_) => false,
+    let a = availability("Summarizer", json!({ "type": "key-points", "format": "plain-text", "length": "short", "outputLanguage": "en" })).await;
+    !a.is_empty() && a != "unavailable"
+}
+
+/// "available"／"downloadable"／"downloading"／"unavailable"；不支援時是空字串
+async fn availability(name: &str, opts: Value) -> String {
+    match invoke_api(name, "availability", &[to_js(&opts)]) {
+        Ok(p) => await_js(p).await.ok().and_then(|a| a.as_string()).unwrap_or_default(),
+        Err(_) => String::new(),
     }
 }
 
