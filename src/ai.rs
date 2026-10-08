@@ -1,4 +1,4 @@
-//! 左側「這部影片在講什麼」：用 Chrome 內建 AI（Summarizer API，Gemini Nano）整理目前影片的重點
+//! 影片左邊「這部影片在講什麼」：用 Chrome 內建 AI（Summarizer API，Gemini Nano）整理目前影片的重點
 //!
 //! 影片的字幕與說明從 YouTube 影片頁讀取，重點在使用者自己的電腦上產生，不會傳到其他伺服器。
 //! 中文模式先產生英文重點，再用 Chrome 內建的 Translator API 翻成繁體中文（翻不了就顯示英文）。

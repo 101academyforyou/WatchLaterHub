@@ -48,6 +48,15 @@
         </div>
         <button id="shuffle" class="chip" title="換一部">⟳ 換一部</button>
       </div>
+      <!-- 影片左邊：AI 整理目前影片的重點（瀏覽器支援 Chrome 內建 AI 時才顯示） -->
+      <aside id="vai" class="vai" hidden aria-label="這部影片在講什麼">
+        <h2 class="vai-head"><span class="vai-spark" aria-hidden="true">✦</span> 這部影片在講什麼</h2>
+        <button id="vai-go" class="btn vai-go" type="button">用 AI 整理重點</button>
+        <div id="vai-status" class="vai-status" hidden></div>
+        <ul id="vai-points" class="vai-points" data-nt hidden></ul>
+        <div id="vai-src" class="vai-note" hidden></div>
+        <div class="vai-note">由 Chrome 內建 AI 在你的電腦上產生，可能有錯誤</div>
+      </aside>
     </section>
 
     <!-- 還沒有收藏時 -->
@@ -59,16 +68,6 @@
     </section>
 
   </main>
-
-  <!-- 左側：AI 整理目前影片的重點（瀏覽器支援 Chrome 內建 AI 時才顯示） -->
-  <aside id="vai" class="vai" hidden aria-label="這部影片在講什麼">
-    <h2 class="vai-head"><span class="vai-spark" aria-hidden="true">✦</span> 這部影片在講什麼</h2>
-    <button id="vai-go" class="btn vai-go" type="button">用 AI 整理重點</button>
-    <div id="vai-status" class="vai-status" hidden></div>
-    <ul id="vai-points" class="vai-points" data-nt hidden></ul>
-    <div id="vai-src" class="vai-note" hidden></div>
-    <div class="vai-note">由 Chrome 內建 AI 在你的電腦上產生，可能有錯誤</div>
-  </aside>
 
   <!-- TODO 清單 -->
   <section id="todo" class="todo" hidden aria-label="TODO 清單">

@@ -797,9 +797,10 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 .sync-tag { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--pill); color: var(--muted); font-size: 11px; }
 .list li.synced { padding-left: 20px; }
 
-/* 左側：AI 整理影片重點 */
+/* 影片正左方：AI 整理影片重點 */
+.video { position: relative; }
 .vai {
-  position: fixed; top: 64px; left: 16px; z-index: 4; width: 300px; max-height: calc(100vh - 80px);
+  position: absolute; top: 0; right: calc(100% + 24px); z-index: 4; width: 300px; max-height: 70vh;
   overflow-y: auto; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px;
   background: var(--bg); font-size: 13px; line-height: 1.6;
 }
@@ -811,8 +812,8 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 .vai-points li + li { margin-top: 6px; }
 .vai-note { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
 #vai-src { margin-top: 8px; }
-/* 視窗不夠寬、或右側面板把中間內容往左推時，不顯示 */
-@media (max-width: 1240px) { .vai { display: none !important; } }
+/* 影片左邊放不下（視窗不夠寬、或右側面板把中間內容往左推）時，不顯示 */
+@media (max-width: 1280px) { .vai { display: none !important; } }
 @media (max-width: 1400px) {
   body.bm-open .vai, body:has(#recent:not([hidden])) .vai { display: none !important; }
 }
