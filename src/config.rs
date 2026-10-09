@@ -21,5 +21,9 @@ pub const DEFAULT_VIDEOS: &[(&str, &str, &str)] = &[
     ),
 ];
 
+/// 新分頁左側贊助內容的設定檔（GitHub Pages 上的 docs/ads.json，格式見 docs/ADS.md）。
+/// 設成空字串就完全關閉贊助內容。
+pub const ADS_URL: &str = "https://101academyforyou.github.io/WatchLaterHub/ads.json";
+
 /// 每個來源（稍後觀看／播放清單）最多同步幾部
 pub const MAX_PER_SOURCE: usize = 1000;

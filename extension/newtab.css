@@ -88,6 +88,27 @@ body {
 
 main { display: flex; flex-direction: column; align-items: center; padding: 6vh 16px 40px; }
 
+/* 左側贊助內容：小而安靜，只放一張圖片加一行字；左邊空間不夠時不顯示 */
+.ad {
+  position: fixed; left: 24px; top: 50%; transform: translateY(-50%); z-index: 1; width: 200px;
+  font-size: 12.5px; color: var(--muted);
+}
+.ad[hidden] { display: none; }
+.ad-link { display: block; color: var(--fg); text-decoration: none; }
+.ad-link img { display: block; width: 100%; max-height: 160px; object-fit: cover; border-radius: 10px; background: var(--pill); }
+.ad-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 6px; line-height: 1.45; }
+.ad-link:hover .ad-text { text-decoration: underline; }
+.ad-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.ad-label { font-size: 11px; padding: 0 6px; border: 1px solid var(--line); border-radius: 4px; }
+.ad-x { border: 0; background: none; color: var(--muted); font-size: 11px; cursor: pointer; padding: 2px 6px; border-radius: 50%; opacity: .6; }
+.ad-x:hover { background: var(--pill); opacity: 1; }
+@media (max-width: 1199px) { .ad { display: none; } }
+@media (max-width: 1599px) {
+  body:has(#bm:not([hidden])) .ad, body:has(#recent:not([hidden])) .ad { display: none; }
+}
+.ads-opt { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); cursor: pointer; }
+.ads-opt[hidden] { display: none; }
+
 /* 影片卡 */
 .video { width: min(584px, 100%); margin-top: 36px; }
 .thumb {

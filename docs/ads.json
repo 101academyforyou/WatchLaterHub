@@ -1,0 +1,14 @@
+{
+  "_說明": "WatchLaterHub 新分頁左側的贊助內容。改完存檔推上 GitHub，使用者 10 分鐘內就會看到新內容。格式說明見 docs/ADS.md",
+  "ads": [
+    {
+      "id": "rate-us",
+      "image": "https://101academyforyou.github.io/WatchLaterHub/icon128.png",
+      "text": "喜歡 WatchLaterHub 嗎？給我們一個五星評價 ⭐",
+      "text_en": "Enjoying WatchLaterHub? Leave us a 5-star review ⭐",
+      "url": "https://chromewebstore.google.com/detail/watchlaterhub/ijighpdloaokiflblkmmecapbmhhecbl/reviews",
+      "start": "2026-10-01",
+      "end": ""
+    }
+  ]
+}

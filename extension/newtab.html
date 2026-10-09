@@ -60,6 +60,12 @@
 
   </main>
 
+  <!-- 左側贊助內容（設定檔：docs/ads.json） -->
+  <aside id="ad" class="ad" hidden aria-label="贊助">
+    <a id="ad-link" class="ad-link" target="_blank" rel="noopener sponsored"><img id="ad-img" alt=""><span id="ad-text" class="ad-text" data-nt></span></a>
+    <div class="ad-foot"><span class="ad-label">贊助</span><button id="ad-hide" class="ad-x" type="button" title="隱藏贊助內容（可在「收藏」視窗底部重新打開）" aria-label="隱藏贊助內容">✕</button></div>
+  </aside>
+
   <!-- TODO 清單 -->
   <section id="todo" class="todo" hidden aria-label="TODO 清單">
     <div class="bm-head">
@@ -368,6 +374,7 @@
     </div>
     <div class="panel-search fav-search"><svg class="ps-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="fav-search" type="search" placeholder="搜尋影片（標題、頻道）" autocomplete="off" spellcheck="false" aria-label="搜尋影片"><span id="fav-count" class="fav-count"></span></div>
     <ul id="list" class="list"></ul>
+    <label id="ads-opt" class="ads-opt"><input id="ads-show" type="checkbox" checked> 在新分頁左側顯示贊助內容</label>
   </dialog>
 
 

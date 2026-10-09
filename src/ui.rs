@@ -593,6 +593,7 @@ pub fn start() {
     crate::todo::start();
     crate::recent::start();
     crate::apps::start();
+    crate::ads::start();
 
     // 新分頁維持上次的面板（TODO 和書籤在各自的 start() 裡打開）
     for id in PANELS {
