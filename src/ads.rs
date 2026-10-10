@@ -3,7 +3,8 @@
 //! 內容來自網路上的設定檔（`config::ADS_URL`，放在 GitHub Pages 的 `docs/ads.json`），
 //! 改了設定檔不用重新上架，使用者最慢 `REFRESH_MIN` 分鐘就會看到新內容。
 //! 只把它當資料顯示（圖片、一行文字、連結），不執行任何下載來的程式，也不追蹤曝光或點擊。
-//! 使用者按 ✕ 就隱藏，之後也不再下載設定檔；在「收藏」視窗底部可以重新打開。
+//! 按 ✕ 只隱藏這個分頁的這一則，下一個新分頁照樣顯示（可能換一則）；
+//! 要完全關閉，在「收藏」視窗底部取消勾選，之後也不再下載設定檔。
 
 use serde::{Deserialize, Serialize};
 
@@ -131,7 +132,8 @@ mod view {
             el("ads-opt").set_hidden(true);
             return;
         }
-        on_click("ad-hide", || spawn(set_hidden(true)));
+        // ✕：只隱藏這個分頁
+        on_click("ad-hide", || set_visible(false));
         listen(&el("ads-show"), "change", |_| {
             let show = by_id::<HtmlInputElement>("ads-show").checked();
             spawn(set_hidden(!show));

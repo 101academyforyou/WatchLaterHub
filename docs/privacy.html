@@ -99,7 +99,7 @@ footer{margin-top:auto;border-top:1px solid #E1ECFA}
 <li>新分頁左側可能顯示<strong>一則小型贊助內容</strong>（一張圖片加一行文字），並清楚標示「贊助」。內容由開發者自行挑選，<strong>所有使用者看到的都一樣，不是依你的資料投放的個人化廣告</strong>。</li>
 <li>為了即時更新內容，本擴充功能最多每 10 分鐘向 GitHub Pages（<code>101academyforyou.github.io</code>，或其自訂網域 <code>onepointzeroone.org</code>）下載一次公開的設定檔 <code>ads.json</code>。這個請求<strong>不包含任何你的資料</strong>；但就像瀏覽任何網站一樣，GitHub 與圖片所在的主機會看到你的 IP 位址與請求時間。本擴充功能不使用 cookie、追蹤碼或分析工具，也不記錄曝光或點擊。</li>
 <li>點擊贊助內容會在新分頁開啟該網站，之後的資料處理依該網站的隱私權政策。</li>
-<li>你可以隨時按贊助內容右上角的 ✕ 隱藏；要再顯示，在「收藏」視窗底部勾選「顯示贊助內容」。隱藏後本擴充功能就不再下載設定檔。</li>
+<li>按贊助內容右下角的 ✕，會在目前這個分頁隱藏；要完全關閉，在「收藏」視窗底部取消勾選「在新分頁左側顯示贊助內容」，關閉後本擴充功能就不再下載設定檔。</li>
 </ul>
 
 <h2 id="never">四、我們不會做的事</h2>
@@ -127,7 +127,7 @@ footer{margin-top:auto;border-top:1px solid #E1ECFA}
 <li><strong>Google / YouTube:</strong> read-only access (<code>youtube.readonly</code>) to load your playlists. For your Watch later list (not offered by the YouTube API), the extension reads your own Watch later page on youtube.com using the YouTube sign-in already in this browser, and reads the youtube.com SAPISID cookie only to build the authorization header youtube.com requires for loading more than 100 videos. The cookie is never stored and is sent only back to youtube.com.</li>
 <li><strong>Bookmarks, history, location:</strong> used only to show your bookmarks, your recently visited pages and local weather (location only when you click “Use current location”, sent to Open-Meteo, BigDataCloud and OpenStreetMap).</li>
 <li><strong>Toolbar button:</strong> when you click it, the extension reads the current tab's URL only to check whether it is a new tab page. The URL is not stored.</li>
-<li><strong>Sponsored content:</strong> the new tab may show one small item labeled “Sponsored”. It is the same for everyone and is not personalized. To keep it up to date, the extension downloads a public settings file (<code>ads.json</code>) from GitHub Pages at most every 10 minutes; the request contains none of your data, though GitHub and the image host can see your IP address, as with any web request. No cookies, tracking or analytics are used, and impressions and clicks are not recorded. Hide it any time with ✕, and the file is no longer downloaded.</li>
+<li><strong>Sponsored content:</strong> the new tab may show one small item labeled “Sponsored”. It is the same for everyone and is not personalized. To keep it up to date, the extension downloads a public settings file (<code>ads.json</code>) from GitHub Pages at most every 10 minutes; the request contains none of your data, though GitHub and the image host can see your IP address, as with any web request. No cookies, tracking or analytics are used, and impressions and clicks are not recorded. Click ✕ to hide it on the current tab, or untick “Show sponsored content” at the bottom of “Saved” to turn it off completely; the file is then no longer downloaded.</li>
 <li>We never sell or share your data, never use it for advertising or credit decisions, and follow the Google API Services User Data Policy, including the Limited Use requirements.</li>
 </ul>
 </article>

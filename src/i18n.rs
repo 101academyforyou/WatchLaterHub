@@ -369,8 +369,8 @@ const EXACT: &[(&str, &str)] = &[
     ("知道了", "Got it"),
     // 贊助內容
     ("贊助", "Sponsored"),
-    ("隱藏贊助內容（可在「收藏」視窗底部重新打開）", "Hide sponsored content (turn it back on at the bottom of “Saved”)"),
-    ("隱藏贊助內容", "Hide sponsored content"),
+    ("在這個分頁隱藏（要完全關閉，在「收藏」視窗底部取消勾選）", "Hide on this tab (to turn it off completely, untick it at the bottom of “Saved”)"),
+    ("在這個分頁隱藏贊助內容", "Hide sponsored content on this tab"),
     ("在新分頁左側顯示贊助內容", "Show sponsored content on the left of the new tab"),
     // 切換新分頁
     ("改用 Chrome 原本的新分頁（按瀏覽器工具列的 WatchLaterHub 圖示可以恢復）", "Switch to Chrome's original new tab (click the WatchLaterHub icon in the toolbar to switch back)"),
