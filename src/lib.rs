@@ -1,4 +1,4 @@
-//! WatchLaterHub — Chrome 新分頁：隨機顯示一部你在 YouTube 收藏的影片 + Google 搜尋
+//! WatchLaterHub — Chrome 新分頁：隨機顯示一部你在 YouTube 收藏的影片，加上書籤與待辦清單
 //!
 //! 所有邏輯都在 Rust 裡，編譯成 WebAssembly；
 //! `extension/newtab.js` 與 `extension/background.js` 只負責載入 wasm。
