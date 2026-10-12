@@ -106,8 +106,7 @@ main { display: flex; flex-direction: column; align-items: center; padding: 6vh 
 @media (max-width: 1599px) {
   body:has(#bm:not([hidden])) .ad, body:has(#recent:not([hidden])) .ad { display: none; }
 }
-.ads-opt { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); cursor: pointer; }
-.ads-opt[hidden] { display: none; }
+
 
 /* 影片卡 */
 .video { width: min(584px, 100%); margin-top: 36px; }

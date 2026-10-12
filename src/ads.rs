@@ -3,8 +3,7 @@
 //! 內容來自網路上的設定檔（`config::ADS_URL`，放在 GitHub Pages 的 `docs/ads.json`），
 //! 改了設定檔不用重新上架，使用者最慢 `REFRESH_MIN` 分鐘就會看到新內容。
 //! 只把它當資料顯示（圖片、一行文字、連結），不執行任何下載來的程式，也不追蹤曝光或點擊。
-//! 按 ✕ 只隱藏這個分頁的這一則，下一個新分頁照樣顯示（可能換一則）；
-//! 要完全關閉，在「收藏」視窗底部取消勾選，之後也不再下載設定檔。
+//! 按 ✕ 只隱藏這個分頁的這一則，下一個新分頁照樣顯示（可能換一則）。
 
 use serde::{Deserialize, Serialize};
 
@@ -64,9 +63,8 @@ mod view {
     use crate::chrome::{self, to_js};
     use crate::config;
     use crate::ui::{by_id, el, listen, on_click, spawn};
-    use web_sys::{HtmlAnchorElement, HtmlImageElement, HtmlInputElement};
+    use web_sys::{HtmlAnchorElement, HtmlImageElement};
 
-    const HIDDEN_KEY: &str = "adsHidden";
     const CACHE_KEY: &str = "adsCache";
 
     #[derive(Serialize, Deserialize, Default)]
@@ -117,36 +115,15 @@ mod view {
         }
     }
 
-    async fn set_hidden(hidden: bool) {
-        chrome::set(&[(HIDDEN_KEY, to_js(&hidden))]).await;
-        by_id::<HtmlInputElement>("ads-show").set_checked(!hidden);
-        if hidden {
-            set_visible(false);
-        } else {
-            load_and_show().await;
-        }
-    }
-
     pub fn start() {
         if config::ADS_URL.is_empty() {
-            el("ads-opt").set_hidden(true);
             return;
         }
         // ✕：只隱藏這個分頁
         on_click("ad-hide", || set_visible(false));
-        listen(&el("ads-show"), "change", |_| {
-            let show = by_id::<HtmlInputElement>("ads-show").checked();
-            spawn(set_hidden(!show));
-        });
         // 圖片載入失敗就整個不顯示
         listen(&el("ad-img"), "error", |_| set_visible(false));
-        spawn(async {
-            let hidden: bool = chrome::get_or(HIDDEN_KEY, false).await;
-            by_id::<HtmlInputElement>("ads-show").set_checked(!hidden);
-            if !hidden {
-                load_and_show().await;
-            }
-        });
+        spawn(load_and_show());
     }
 }
 
