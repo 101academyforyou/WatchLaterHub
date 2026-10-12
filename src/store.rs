@@ -54,8 +54,31 @@ async fn fetch_info(id: &str) -> (String, String) {
             r.json["title"].as_str().unwrap_or(id).to_string(),
             r.json["author_name"].as_str().unwrap_or("").to_string(),
         ),
-        _ => (format!("YouTube 影片 {id}"), String::new()),
+        _ => (placeholder_title(id), String::new()),
     }
+}
+
+/// 查不到標題時暫用的名稱
+fn placeholder_title(id: &str) -> String {
+    format!("YouTube 影片 {id}")
+}
+
+/// 之前查不到標題（例如安裝時沒網路）的影片，再查一次；有補到就回傳 true
+pub async fn fill_missing_titles() -> bool {
+    let mut list = get_manual().await;
+    let mut changed = false;
+    for v in list.iter_mut().filter(|v| v.title == placeholder_title(&v.id)) {
+        let (title, author) = fetch_info(&v.id).await;
+        if title != placeholder_title(&v.id) {
+            v.title = title;
+            v.author = author;
+            changed = true;
+        }
+    }
+    if changed {
+        save_manual(&list).await;
+    }
+    changed
 }
 
 /// 加入多個網址，回傳 (加入數, 略過數)
@@ -97,16 +120,29 @@ pub async fn remove(id: &str) {
 }
 
 /// 第一次安裝時放入預設收藏（只做一次）
+/// 預設收藏改版時（`config::DEFAULTS_VERSION`），已安裝的人移除舊的預設影片、加入新的
 pub async fn seed_defaults() {
-    if chrome::get_or("defaultsSeeded", false).await {
+    let seeded: bool = chrome::get_or("defaultsSeeded", false).await;
+    let version: u32 = chrome::get_or("defaultsVersion", if seeded { 1 } else { 0 }).await;
+    if seeded && version >= config::DEFAULTS_VERSION {
         return;
     }
     let mut list = get_manual().await;
+    if seeded {
+        list.retain(|v| !config::RETIRED_DEFAULTS.contains(&v.id.as_str()));
+    }
     for (id, title, author) in config::DEFAULT_VIDEOS {
-        if !list.iter().any(|v| v.id == *id) {
-            list.push(Video { added_at: Some(chrome::now()), ..Video::new(id, title, author) });
+        let wanted = !seeded || config::NEW_DEFAULTS.contains(id);
+        if wanted && !list.iter().any(|v| v.id == *id) {
+            let (title, author) = if title.is_empty() { fetch_info(id).await } else { (title.to_string(), author.to_string()) };
+            list.push(Video { added_at: Some(chrome::now()), ..Video::new(id, &title, &author) });
         }
     }
-    chrome::set(&[(KEY, to_js(&list)), ("defaultsSeeded", to_js(&true))]).await;
+    chrome::set(&[
+        (KEY, to_js(&list)),
+        ("defaultsSeeded", to_js(&true)),
+        ("defaultsVersion", to_js(&config::DEFAULTS_VERSION)),
+    ])
+    .await;
 }
 

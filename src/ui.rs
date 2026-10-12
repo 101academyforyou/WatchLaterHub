@@ -772,6 +772,10 @@ pub fn start() {
     spawn(async {
         store::seed_defaults().await;
         render().await;
+        // 安裝時沒查到標題的影片，補查一次
+        if store::fill_missing_titles().await {
+            render().await;
+        }
     });
 }
 
