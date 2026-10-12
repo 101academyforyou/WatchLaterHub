@@ -23,15 +23,14 @@
   </div>
 
   <main>
-    <form id="search" action="https://www.google.com/search" method="get" autocomplete="off">
+    <!-- 用 chrome.search 交給使用者在 Chrome 設定的預設搜尋引擎（商店規定：新分頁不能自己指定搜尋引擎） -->
+    <form id="search" autocomplete="off">
       <div class="box">
         <svg class="icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <input id="q" name="q" type="text" autofocus aria-label="搜尋">
-        <button type="button" id="ai" class="pill" title="以 Google AI 模式搜尋">✦ AI 模式</button>
+        <input id="q" name="q" type="text" autofocus aria-label="搜尋" placeholder="搜尋（使用你的預設搜尋引擎）">
       </div>
       <div class="buttons">
-        <button type="submit" class="btn">Google 搜尋</button>
-        <button type="button" id="lucky" class="btn">好手氣</button>
+        <button type="submit" class="btn">搜尋</button>
       </div>
     </form>
 

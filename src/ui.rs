@@ -3,7 +3,7 @@
 use crate::chrome::{self, to_js};
 use crate::playlist;
 use crate::store;
-use crate::videos::{ago, pick_random, query, split_input, Video};
+use crate::videos::{ago, pick_random, split_input, Video};
 use crate::youtube::{self, CANCELLED};
 use std::cell::{Cell, RefCell};
 use std::future::Future;
@@ -174,22 +174,14 @@ pub(crate) fn search_box(id: &'static str, on_change: impl Fn() + 'static) {
 // ---------- 搜尋 ----------
 
 /// 送出搜尋。搜尋框空白時比照 Google 首頁：有 `empty_url` 就直接前往，沒有就把游標移回搜尋框
-fn go(extra: &[(&str, &str)], empty_url: Option<&str>) {
+/// 搜尋：交給使用者在 Chrome 設定的預設搜尋引擎（chrome.search），在這個分頁開結果
+fn search() {
     let q = input_value("q").trim().to_string();
-    let url = if q.is_empty() {
-        match empty_url {
-            Some(u) => u.to_string(),
-            None => {
-                let _ = el("q").focus();
-                return;
-            }
-        }
-    } else {
-        let mut params = vec![("q", q.as_str())];
-        params.extend_from_slice(extra);
-        format!("https://www.google.com/search?{}", query(&params))
-    };
-    let _ = web_sys::window().unwrap().location().set_href(&url);
+    if q.is_empty() {
+        let _ = el("q").focus();
+        return;
+    }
+    spawn(async move { crate::chrome::search_query(&q).await });
 }
 
 // ---------- 畫面狀態 ----------
@@ -577,11 +569,11 @@ pub fn start() {
         cb.forget();
     }
 
-    // 搜尋
-    // 好手氣：空白時跟 Google 一樣打開塗鴉頁
-    on_click("lucky", || go(&[("btnI", "1")], Some("https://www.google.com/doodles")));
-    // AI 模式：有文字就直接問，空白就打開 AI 模式首頁
-    on_click("ai", || go(&[("udm", "50")], Some("https://www.google.com/search?udm=50")));
+    // 搜尋（Enter 或按「搜尋」）
+    listen(&el("search"), "submit", |e| {
+        e.prevent_default();
+        search();
+    });
 
     // 左上的 WatchLaterHub 圖示：改用 Chrome 原本的新分頁
     on_click("ntp-off", || spawn(crate::ntp::switch_to_chrome()));

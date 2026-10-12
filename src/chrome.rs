@@ -86,6 +86,8 @@ extern "C" {
     async fn tabs_create_raw(props: JsValue) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(js_namespace = ["chrome", "runtime"], js_name = getURL)]
     fn runtime_get_url(path: &str) -> String;
+    #[wasm_bindgen(js_namespace = ["chrome", "search"], js_name = query, catch)]
+    async fn search_query_raw(props: JsValue) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(js_namespace = ["chrome", "action"], js_name = setBadgeText)]
     fn action_set_badge_text(details: JsValue);
     #[wasm_bindgen(js_namespace = ["chrome", "action"], js_name = setBadgeBackgroundColor)]
@@ -437,6 +439,11 @@ async fn current_tab() -> Option<(f64, f64)> {
     let id = Reflect::get(&t, &"id".into()).ok()?.as_f64()?;
     let index = Reflect::get(&t, &"index".into()).ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
     Some((id, index))
+}
+
+/// 用使用者的預設搜尋引擎搜尋，結果開在目前分頁（manifest 要有 "search" 權限）
+pub async fn search_query(text: &str) {
+    let _ = search_query_raw(to_js(&serde_json::json!({ "text": text, "disposition": "CURRENT_TAB" }))).await;
 }
 
 /// 工具列圖示上的小標記（空字串 = 不顯示）

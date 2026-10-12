@@ -49,10 +49,7 @@ const EXACT: &[(&str, &str)] = &[
     ("切換語言", "Switch language"),
     // 搜尋與影片
     ("搜尋", "Search"),
-    ("以 Google AI 模式搜尋", "Search with Google AI Mode"),
-    ("✦ AI 模式", "✦ AI Mode"),
-    ("Google 搜尋", "Google Search"),
-    ("好手氣", "I'm Feeling Lucky"),
+    ("搜尋（使用你的預設搜尋引擎）", "Search with your default search engine"),
     ("換一部", "Another video"),
     ("在新分頁播放", "Play in a new tab"),
     ("⟳ 換一部", "⟳ Another"),
