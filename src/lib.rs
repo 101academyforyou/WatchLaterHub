@@ -11,7 +11,6 @@ pub mod todo;
 pub mod videos;
 pub mod weather;
 
-mod ads;
 mod apps;
 mod bookbar;
 mod bookmarks;

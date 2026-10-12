@@ -19,9 +19,5 @@ pub const RETIRED_DEFAULTS: &[&str] = &["z_m0ApESD1E", "Tm_q8c4KzW0"];
 /// 這一版新加的預設影片（已安裝的人更新時加入；之前就有的不重複加，使用者刪掉的也不會再加回來）
 pub const NEW_DEFAULTS: &[&str] = &["KTT6R3-rKKY"];
 
-/// 新分頁左側贊助內容的設定檔（GitHub Pages 上的 docs/ads.json，格式見 docs/ADS.md）。
-/// 設成空字串就完全關閉贊助內容。
-pub const ADS_URL: &str = "https://101academyforyou.github.io/WatchLaterHub/ads.json";
-
 /// 每個來源（稍後觀看／播放清單）最多同步幾部
 pub const MAX_PER_SOURCE: usize = 1000;

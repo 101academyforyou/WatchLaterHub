@@ -615,7 +615,6 @@ pub fn start() {
     crate::todo::start();
     crate::recent::start();
     crate::apps::start();
-    crate::ads::start();
 
     // TODO 底部的圖示：固定「新分頁只打開 TODO」
     render_todo_pin();
