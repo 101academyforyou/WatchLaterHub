@@ -245,6 +245,9 @@ pub struct HistoryItem {
 
 /// `since`（毫秒時間戳）之後瀏覽過的網頁，最多 `max` 筆
 pub async fn history_since(since: f64, max: u32) -> Vec<HistoryItem> {
+    if !has_api("history") {
+        return vec![];
+    }
     let q = serde_json::json!({ "text": "", "startTime": since, "maxResults": max });
     match history_search_raw(to_js(&q)).await {
         Ok(v) => from_js(&v).unwrap_or_default(),
@@ -254,6 +257,9 @@ pub async fn history_since(since: f64, max: u32) -> Vec<HistoryItem> {
 
 /// `start`～`end`（毫秒時間戳）之間瀏覽過的網頁
 pub async fn history_range(start: f64, end: f64, max: u32) -> Vec<HistoryItem> {
+    if !has_api("history") {
+        return vec![];
+    }
     let q = serde_json::json!({ "text": "", "startTime": start, "endTime": end, "maxResults": max });
     match history_search_raw(to_js(&q)).await {
         Ok(v) => from_js(&v).unwrap_or_default(),
@@ -268,6 +274,9 @@ pub async fn history_visit_times(url: &str) -> Vec<f64> {
         #[serde(rename = "visitTime", default)]
         t: f64,
     }
+    if !has_api("history") {
+        return vec![];
+    }
     match history_get_visits_raw(to_js(&serde_json::json!({ "url": url }))).await {
         Ok(v) => from_js::<Vec<V>>(&v).unwrap_or_default().into_iter().map(|x| x.t).collect(),
         Err(_) => vec![],
@@ -275,6 +284,10 @@ pub async fn history_visit_times(url: &str) -> Vec<f64> {
 }
 
 pub fn on_history_visited(f: impl FnMut() + 'static) {
+    // 還沒同意讀取瀏覽紀錄時 chrome.history 不存在
+    if !has_api("history") {
+        return;
+    }
     let cb = Closure::<dyn FnMut()>::new(f);
     history_on_visited(cb.as_ref().unchecked_ref());
     cb.forget();
@@ -439,6 +452,51 @@ async fn current_tab() -> Option<(f64, f64)> {
     let id = Reflect::get(&t, &"id".into()).ok()?.as_f64()?;
     let index = Reflect::get(&t, &"index".into()).ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
     Some((id, index))
+}
+
+// ---------- 選用權限（第一次用到才請使用者同意） ----------
+
+/// 讀取 YouTube 與 Google API 需要的網站存取權（manifest 的 optional_host_permissions）
+pub const YT_ORIGINS: [&str; 2] = ["https://www.youtube.com/*", "https://www.googleapis.com/*"];
+/// 只要 youtube.com（查影片標題、讀播放清單網址）
+pub const YOUTUBE_ORIGIN: [&str; 1] = ["https://www.youtube.com/*"];
+
+fn perm_query(perms: &[&str], origins: &[&str]) -> JsValue {
+    to_js(&serde_json::json!({ "permissions": perms, "origins": origins }))
+}
+
+/// 呼叫 chrome.permissions.<f>(arg)，回傳結果是不是 true。
+/// 不直接用 wasm-bindgen 綁定：有些情況（例如沒有使用者點擊）Chrome 不回傳 Promise，綁定會出錯
+async fn permissions_call(f: &str, arg: JsValue) -> bool {
+    let call = || -> Option<js_sys::Promise> {
+        let chrome = Reflect::get(&js_sys::global(), &"chrome".into()).ok()?;
+        let perms = Reflect::get(&chrome, &"permissions".into()).ok()?;
+        let func: js_sys::Function = Reflect::get(&perms, &f.into()).ok()?.dyn_into().ok()?;
+        func.call1(&perms, &arg).ok()?.dyn_into().ok()
+    };
+    match call() {
+        Some(p) => JsFuture::from(p).await.ok().and_then(|v| v.as_bool()).unwrap_or(false),
+        None => false,
+    }
+}
+
+/// 已經同意了嗎
+pub async fn has_permission(perms: &[&str], origins: &[&str]) -> bool {
+    permissions_call("contains", perm_query(perms, origins)).await
+}
+
+/// 還沒同意就跳出 Chrome 的同意視窗（必須在使用者剛點擊之後呼叫），回傳最後有沒有同意
+pub async fn request_permission(perms: &[&str], origins: &[&str]) -> bool {
+    if has_permission(perms, origins).await {
+        return true;
+    }
+    permissions_call("request", perm_query(perms, origins)).await
+}
+
+/// chrome.<name> 這個 API 目前能不能用（選用權限還沒同意時是 undefined）
+pub fn has_api(name: &str) -> bool {
+    let chrome = Reflect::get(&js_sys::global(), &"chrome".into()).unwrap_or(JsValue::UNDEFINED);
+    Reflect::get(&chrome, &name.into()).map(|v| !v.is_undefined()).unwrap_or(false)
 }
 
 /// 用使用者的預設搜尋引擎搜尋，結果開在目前分頁（manifest 要有 "search" 權限）

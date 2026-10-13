@@ -324,6 +324,9 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
   border: 1px solid var(--line); border-radius: 6px; background: var(--bg);
 }
 .todo-none { padding: 22px 12px; text-align: center; color: var(--muted); font-size: 13px; }
+.apps-allow { display: block; margin: 0 0 8px; font-size: 13px; }
+.apps-allow[hidden] { display: none; }
+.perm-ask { display: flex; flex-direction: column; align-items: center; gap: 12px; line-height: 1.6; }
 .todo-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 8px 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted);

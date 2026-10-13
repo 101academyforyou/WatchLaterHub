@@ -286,6 +286,10 @@ async fn login() {
     if !youtube::is_configured().await {
         return open_setup();
     }
+    // 第一次登入才請使用者同意存取 YouTube 與 Google API
+    if !crate::chrome::request_permission(&[], &crate::chrome::YT_ORIGINS).await {
+        return show_login_error("需要允許存取 YouTube 與 Google API 才能登入");
+    }
     set_logging_in(true);
     text("login-error", "");
     hide("toast", true);
@@ -318,19 +322,24 @@ async fn login() {
         } else {
             e
         };
-        text("login-error", &msg);
-        if dialog("manage").open() {
-            text("yt-status", &format!("⚠ {msg}"));
-        } else if el("empty").hidden() {
-            // 已有影片時，空白頁的 #login-error 看不到，改用浮動提示
-            show_toast(&msg);
-        }
+        show_login_error(&msg);
     }
     set_logging_in(false);
     set_login_buttons_disabled(false);
     render().await;
     if dialog("manage").open() {
         render_yt(false).await;
+    }
+}
+
+/// 顯示登入失敗的原因（空白頁、收藏視窗或浮動提示）
+fn show_login_error(msg: &str) {
+    text("login-error", msg);
+    if dialog("manage").open() {
+        text("yt-status", &format!("⚠ {msg}"));
+    } else if el("empty").hidden() {
+        // 已有影片時，空白頁的 #login-error 看不到，改用浮動提示
+        show_toast(msg);
     }
 }
 
@@ -566,6 +575,9 @@ async fn fetch_playlist() {
         let _ = el("pl-url").focus();
         return text("msg", "請貼上播放清單網址（網址裡要有 list=…）");
     };
+    if !crate::chrome::request_permission(&[], &crate::chrome::YOUTUBE_ORIGIN).await {
+        return text("msg", "需要允許存取 youtube.com 才能讀取播放清單");
+    }
     let btn: HtmlButtonElement = by_id("pl-fetch");
     btn.set_disabled(true);
     text("msg", "讀取播放清單中…");
@@ -716,6 +728,8 @@ pub fn start() {
             let btn: HtmlButtonElement = by_id("add");
             btn.set_disabled(true);
             text("msg", "加入中…");
+            // 查影片標題要存取 youtube.com（第一次會請使用者同意；不同意也照樣加入，只是沒有標題）
+            crate::chrome::request_permission(&[], &crate::chrome::YOUTUBE_ORIGIN).await;
             let known = KNOWN.with(|k| k.borrow().clone());
             let (added, skipped) = store::add_many_known(&lines, &known).await;
             btn.set_disabled(false);

@@ -519,8 +519,22 @@ mod view {
         let _ = el("recent-toggle").set_attribute("aria-expanded", if open { "true" } else { "false" });
         if open {
             let _ = el("recent-search").focus();
-            spawn(async { render_async(sync().await).await });
+            spawn(open_with_permission());
         }
+    }
+
+    /// 第一次打開時才請使用者同意讀取瀏覽紀錄（按「最近」按鈕時 Chrome 會跳出同意視窗）；
+    /// 沒同意就顯示「允許」按鈕
+    async fn open_with_permission() {
+        if !chrome::request_permission(&["history"], &[]).await {
+            let ul = el("recent-list");
+            ul.set_inner_html(r#"<li class="todo-none perm-ask"><span>「最近」需要讀取瀏覽紀錄的權限（只讀取，不會傳到任何地方）</span><button class="btn primary" type="button">允許</button></li>"#);
+            if let Some(b) = ul.query_selector("button").ok().flatten() {
+                listen(&b, "click", |_| spawn(open_with_permission()));
+            }
+            return;
+        }
+        render_async(sync().await).await;
     }
 
     pub fn start() {

@@ -247,7 +247,11 @@ mod view {
         });
     }
 
+    /// 連線到電腦小幫手要使用者同意（第一次用到時，跟著使用者的點擊跳出 Chrome 的同意視窗）
     async fn native(msg: serde_json::Value) -> Result<serde_json::Value, String> {
+        if !chrome::request_permission(&["nativeMessaging"], &[]).await {
+            return Err("需要允許連線到電腦小幫手".into());
+        }
         let r = send_native_raw(HOST, to_js(&msg)).await.map_err(chrome::err_msg)?;
         let v: serde_json::Value = chrome::from_js(&r).unwrap_or(serde_json::Value::Null);
         if v["ok"].as_bool() == Some(true) {
@@ -524,6 +528,15 @@ mod view {
 
     /// 檢查小幫手、取得已安裝軟體
     async fn check_helper() {
+        // 還沒同意連線到小幫手：不主動跳同意視窗，顯示「連接電腦小幫手」按鈕讓使用者自己按
+        let allowed = chrome::has_permission(&["nativeMessaging"], &[]).await;
+        hide("apps-allow", allowed);
+        if !allowed {
+            INSTALLED.with(|i| *i.borrow_mut() = None);
+            hide("apps-helper-on", true);
+            render_installed();
+            return;
+        }
         match native(serde_json::json!({ "action": "list" })).await {
             Ok(v) => {
                 let apps: Vec<Installed> = serde_json::from_value(v["apps"].clone()).unwrap_or_default();
@@ -593,6 +606,13 @@ mod view {
 
     pub fn start() {
         on_click("apps-toggle", || set_open(!is_open()));
+        on_click("apps-allow", || {
+            spawn(async {
+                if chrome::request_permission(&["nativeMessaging"], &[]).await {
+                    check_helper().await;
+                }
+            })
+        });
         on_click("apps-close", || set_open(false));
         on_click("apps-add-btn", || {
             let show = el("apps-add").hidden();
