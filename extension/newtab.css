@@ -1,4 +1,5 @@
 :root {
+  --side-w: 600px; /* 書籤、最近、工具面板的寬度（標題列放得下 9 個釘選格） */
   --bg: #fff; --fg: #202124; --muted: #5f6368; --line: #dfe1e5;
   --btn: #f8f9fa; --pill: #f1f3f4; --shadow: 0 1px 6px rgba(32,33,36,.28);
   --accent: #1a73e8; --red: #ff0033;
@@ -220,7 +221,7 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 /* 右側書籤 */
 #bm-toggle.on { background: color-mix(in srgb, var(--accent) 16%, var(--pill)); }
 .bm {
-  position: fixed; top: 64px; right: 16px; bottom: 16px; z-index: 5; width: 420px;
+  position: fixed; top: 64px; right: 16px; bottom: 16px; z-index: 5; width: var(--side-w);
   display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 16px;
   background: var(--bg); overflow: hidden;
 }
@@ -257,10 +258,10 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 .bm-item.disabled { opacity: .5; cursor: default; }
 
 /* 書籤面板開著、視窗又不夠寬時，把中間內容往左讓出位置 */
-@media (max-width: 1400px) {
-  body.bm-open main { padding-right: 452px; }
+@media (max-width: 1840px) {
+  body.bm-open main { padding-right: calc(var(--side-w) + 32px); }
 }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .bm { top: auto; height: 50vh; left: 16px; right: 16px; width: auto; box-shadow: var(--shadow); }
   body.bm-open main { padding-right: 16px; padding-bottom: calc(50vh + 32px); }
 }
@@ -462,13 +463,13 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
 #recent-toggle.on { background: color-mix(in srgb, var(--accent) 16%, var(--pill)); }
 /* 最近：版面跟右側書籤面板一樣 */
 .todo.recent {
-  top: 64px; right: 16px; bottom: 16px; width: 420px; max-height: none; z-index: 5;
+  top: 64px; right: 16px; bottom: 16px; width: var(--side-w); max-height: none; z-index: 5;
   border-radius: 16px; box-shadow: none;
 }
-@media (max-width: 1400px) {
-  body:has(#recent:not([hidden])) main { padding-right: 452px; }
+@media (max-width: 1840px) {
+  body:has(#recent:not([hidden])) main { padding-right: calc(var(--side-w) + 32px); }
 }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .todo.recent { top: auto; height: 50vh; left: 16px; right: 16px; width: auto; box-shadow: var(--shadow); }
   body:has(#recent:not([hidden])) main { padding-right: 16px; padding-bottom: calc(50vh + 32px); }
 }
@@ -756,7 +757,7 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 
 /* 開啟：電腦上的軟體 */
 #apps-toggle.on { background: color-mix(in srgb, var(--accent) 16%, var(--pill)); }
-.apps { right: 16px; width: min(400px, calc(100vw - 32px)); }
+.apps { right: 16px; width: min(var(--side-w), calc(100vw - 32px)); }
 .apps .bm-head h2 { flex: none !important; }
 .apps .bm-head .spacer { flex: 1; }
 .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, 72px); justify-content: start; gap: 2px; padding: 10px 12px; overflow-y: auto; }

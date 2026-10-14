@@ -16,7 +16,7 @@ const OPEN_KEY: &str = "bmOpen"; // 展開中的資料夾 id
 const BAR_ID: &str = "1"; // Chrome 的「書籤列」
 const LAST_FOLDER_KEY: &str = "bmLastFolder"; // 上次存到哪個資料夾
 const PINS_KEY: &str = "bmPins"; // 標題列的 5 個釘選書籤
-const PIN_SLOTS: usize = 5;
+const PIN_SLOTS: usize = 9;
 /// 加入書籤時「加入到資料夾最上方」上次的選擇
 const TOP_FIRST_KEY: &str = "bmTopFirst";
 

@@ -11,7 +11,7 @@ pub const HOST: &str = "com.watchlaterhub.launcher";
 pub const LOGOS_KEY: &str = "appLogos2";
 /// 標題列的 5 個常用軟體（存 AppEntry 的 id）
 pub const PINS_KEY: &str = "appPins";
-pub const PIN_SLOTS: usize = 5;
+pub const PIN_SLOTS: usize = 9;
 /// 舊版快取（Mac 上可能存到透明的空白圖），啟動時刪掉
 pub const OLD_LOGOS_KEY: &str = "appLogos";
 
@@ -710,16 +710,17 @@ mod tests {
         let mut l2 = vec![];
         assert!(add_preset(&mut l2, by("Slack"), None, "s".into()));
         assert_eq!(l2[0].icon.as_deref(), Some("slack.com"));
+        let s = |v: &str| Some(v.to_string());
         let mut pins = vec![];
         pin_at(&mut pins, 2, "a");
-        assert_eq!(pins, [None, None, Some("a".to_string()), None, None]);
+        assert_eq!(pins, [None, None, s("a"), None, None, None, None, None, None]);
         pin_at(&mut pins, 0, "a"); // 移到別格
-        pin_at(&mut pins, 4, "b");
+        pin_at(&mut pins, 8, "b");
         pin_at(&mut pins, 9, "c"); // 超出範圍不動
-        assert_eq!(pins, [Some("a".to_string()), None, None, None, Some("b".to_string())]);
-        swap_pins(&mut pins, 0, 4);
+        assert_eq!(pins, [s("a"), None, None, None, None, None, None, None, s("b")]);
+        swap_pins(&mut pins, 0, 8);
         swap_pins(&mut pins, 0, 2); // 拖到空格
-        swap_pins(&mut pins, 0, 7); // 超出範圍不動
-        assert_eq!(pins, [None, None, Some("b".to_string()), None, Some("a".to_string())]);
+        swap_pins(&mut pins, 0, 12); // 超出範圍不動
+        assert_eq!(pins, [None, None, s("b"), None, None, None, None, None, s("a")]);
     }
 }
