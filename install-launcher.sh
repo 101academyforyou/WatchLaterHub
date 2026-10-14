@@ -6,6 +6,7 @@ cd "$(dirname "$0")"
 
 HOST=com.watchlaterhub.launcher
 EXT_ID=lnokcijoconplpecgocjgkhhagkdmcce   # manifest.json 的 key 固定了這個 ID
+STORE_ID=ijighpdloaokiflblkmmecapbmhhecbl # Chrome 線上應用程式商店版本的 ID
 
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 command -v cargo >/dev/null || { echo "❌ 找不到 cargo，請先安裝 Rust：https://rustup.rs"; exit 1; }
@@ -47,7 +48,7 @@ for dir in "${MANIFEST_DIRS[@]}"; do
   "description": "WatchLaterHub 電腦小幫手：開啟電腦上的軟體",
   "path": "$BIN_DIR/launcher",
   "type": "stdio",
-  "allowed_origins": ["chrome-extension://$EXT_ID/"]
+  "allowed_origins": ["chrome-extension://$EXT_ID/", "chrome-extension://$STORE_ID/"]
 }
 JSON
     echo "✅ 已設定：$dir"

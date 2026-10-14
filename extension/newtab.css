@@ -745,8 +745,9 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 .rf:hover { background: var(--pill); color: var(--fg); }
 .rf.on { background: color-mix(in srgb, var(--accent) 16%, var(--pill)); color: var(--accent); font-weight: 600; }
 .recent .bm-head h2 { flex: none !important; }
-/* 最近的釘選格：放得下幾個就顯示幾個（放不下的換到看不見的第二行） */
-.recent .bm-pins { flex: 1 1 0; min-width: 0; flex-wrap: wrap; justify-content: flex-end; height: 40px; overflow: hidden; margin: -6px 4px 0 0; padding: 6px 6px 0 0; box-sizing: border-box; }
+/* 書籤、工具、最近的釘選格：放得下幾個就顯示幾個（放不下的換到看不見的第二行） */
+.bm-head .bm-pins { flex: 1 1 0; min-width: 0; flex-wrap: wrap; justify-content: flex-end; height: 40px; overflow: hidden; margin: -6px 4px 0 0; padding: 6px 6px 0 0; box-sizing: border-box; }
+#bm .bm-head .spacer, .apps .bm-head .spacer { display: none; }
 .rc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 12px 6px; font-size: 13px; color: var(--muted); }
 .rc-row { flex-direction: column; align-items: stretch; }
 .rc-line { display: flex; align-items: center; gap: 6px; }

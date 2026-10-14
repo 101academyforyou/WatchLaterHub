@@ -158,7 +158,7 @@ mod view {
     // ---------- 標題列的釘選格 ----------
 
     const PINS_KEY: &str = "recentPins";
-    const PIN_SLOTS: usize = 9;
+    const PIN_SLOTS: usize = 16;
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
     struct Pin {
@@ -298,7 +298,7 @@ mod view {
 
     fn set_filter(f: Option<(&'static str, f64, f64)>) {
         FILTER.with(|x| *x.borrow_mut() = f);
-        for id in ["rf-today", "rf-yesterday", "rf-before", "rf-week", "rf-custom"] {
+        for id in ["rf-today", "rf-yesterday", "rf-week", "rf-custom"] {
             let _ = el(id).class_list().toggle_with_force("on", f.is_some_and(|(k, _, _)| k == id));
         }
         spawn(async { render_async(load().await).await });
@@ -314,7 +314,6 @@ mod view {
         match id {
             "rf-today" => set_filter(Some((id, day_start(0.0), now))),
             "rf-yesterday" => set_filter(Some((id, day_start(-1.0), day_start(0.0)))),
-            "rf-before" => set_filter(Some((id, day_start(-2.0), day_start(-1.0)))),
             "rf-week" => {
                 let back = days_since_monday(js_sys::Date::new_0().get_day()) as f64;
                 set_filter(Some((id, day_start(-back), now)))
@@ -649,7 +648,7 @@ mod view {
                 render_async(l).await;
             });
         });
-        for id in ["rf-today", "rf-yesterday", "rf-before", "rf-week", "rf-custom"] {
+        for id in ["rf-today", "rf-yesterday", "rf-week", "rf-custom"] {
             on_click(id, move || pick_filter(id));
         }
         on_click("rc-go", apply_custom);

@@ -11,7 +11,7 @@ pub const HOST: &str = "com.watchlaterhub.launcher";
 pub const LOGOS_KEY: &str = "appLogos2";
 /// 標題列的 5 個常用軟體（存 AppEntry 的 id）
 pub const PINS_KEY: &str = "appPins";
-pub const PIN_SLOTS: usize = 9;
+pub const PIN_SLOTS: usize = 16;
 /// 舊版快取（Mac 上可能存到透明的空白圖），啟動時刪掉
 pub const OLD_LOGOS_KEY: &str = "appLogos";
 
@@ -534,6 +534,7 @@ mod view {
         if !allowed {
             INSTALLED.with(|i| *i.borrow_mut() = None);
             hide("apps-helper-on", true);
+            hide("apps-helper-off", true);
             render_installed();
             return;
         }
@@ -542,11 +543,14 @@ mod view {
                 let apps: Vec<Installed> = serde_json::from_value(v["apps"].clone()).unwrap_or_default();
                 INSTALLED.with(|i| *i.borrow_mut() = Some(apps));
                 hide("apps-helper-on", false);
+                hide("apps-helper-off", true);
                 status("", false);
             }
             Err(_) => {
+                // 已同意連線，但電腦上沒有安裝小幫手（或連不上）：說明怎麼安裝
                 INSTALLED.with(|i| *i.borrow_mut() = None);
                 hide("apps-helper-on", true);
+                hide("apps-helper-off", false);
                 status("", false);
             }
         }
@@ -607,12 +611,14 @@ mod view {
     pub fn start() {
         on_click("apps-toggle", || set_open(!is_open()));
         on_click("apps-allow", || {
+            hide("apps-add", false);
             spawn(async {
                 if chrome::request_permission(&["nativeMessaging"], &[]).await {
                     check_helper().await;
                 }
             })
         });
+        on_click("apps-recheck", || spawn(check_helper()));
         on_click("apps-close", || set_open(false));
         on_click("apps-add-btn", || {
             let show = el("apps-add").hidden();
@@ -712,15 +718,22 @@ mod tests {
         assert_eq!(l2[0].icon.as_deref(), Some("slack.com"));
         let s = |v: &str| Some(v.to_string());
         let mut pins = vec![];
+        let at = |v: &[(usize, &str)]| {
+            let mut e: Vec<Option<String>> = vec![None; PIN_SLOTS];
+            for (i, x) in v {
+                e[*i] = s(x);
+            }
+            e
+        };
         pin_at(&mut pins, 2, "a");
-        assert_eq!(pins, [None, None, s("a"), None, None, None, None, None, None]);
+        assert_eq!(pins, at(&[(2, "a")]));
         pin_at(&mut pins, 0, "a"); // 移到別格
         pin_at(&mut pins, 8, "b");
-        pin_at(&mut pins, 9, "c"); // 超出範圍不動
-        assert_eq!(pins, [s("a"), None, None, None, None, None, None, None, s("b")]);
+        pin_at(&mut pins, PIN_SLOTS, "c"); // 超出範圍不動
+        assert_eq!(pins, at(&[(0, "a"), (8, "b")]));
         swap_pins(&mut pins, 0, 8);
         swap_pins(&mut pins, 0, 2); // 拖到空格
-        swap_pins(&mut pins, 0, 12); // 超出範圍不動
-        assert_eq!(pins, [None, None, s("b"), None, None, None, None, None, s("a")]);
+        swap_pins(&mut pins, 0, PIN_SLOTS + 3); // 超出範圍不動
+        assert_eq!(pins, at(&[(2, "b"), (8, "a")]));
     }
 }
