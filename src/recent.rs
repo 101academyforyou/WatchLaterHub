@@ -151,6 +151,92 @@ mod view {
         static FILTER: std::cell::RefCell<Option<(&'static str, f64, f64)>> = const { std::cell::RefCell::new(None) };
         /// 期間篩選中，畫面上列出的項目（「清空」用）
         static SHOWN: std::cell::RefCell<Vec<Recent>> = const { std::cell::RefCell::new(Vec::new()) };
+        /// 畫面上每個網址顯示的名稱（拖到釘選格時用）
+        static LABELS: std::cell::RefCell<std::collections::HashMap<String, String>> = std::cell::RefCell::new(Default::default());
+    }
+
+    // ---------- 標題列的釘選格 ----------
+
+    const PINS_KEY: &str = "recentPins";
+    const PIN_SLOTS: usize = 9;
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    struct Pin {
+        url: String,
+        title: String,
+    }
+
+    async fn load_pins() -> Vec<Option<Pin>> {
+        let mut v: Vec<Option<Pin>> = chrome::get_or(PINS_KEY, vec![]).await;
+        v.resize(PIN_SLOTS, None);
+        v
+    }
+
+    async fn save_pins(v: &[Option<Pin>]) {
+        chrome::set(&[(PINS_KEY, to_js(&v))]).await;
+        render_pins().await;
+    }
+
+    async fn render_pins() {
+        let pins = load_pins().await;
+        for (i, p) in pins.iter().enumerate() {
+            let slot = el(&format!("rc-pin-{i}"));
+            slot.set_inner_html("");
+            match p {
+                Some(p) => {
+                    let _ = slot.set_attribute("draggable", "true");
+                    let _ = slot.class_list().remove_1("pin-empty");
+                    let label = if p.title.trim().is_empty() { p.url.as_str() } else { p.title.as_str() };
+                    slot.append_child(&crate::bookmarks::link_anchor(&p.url, label)).unwrap();
+                    let x = doc().create_element("button").unwrap();
+                    x.set_class_name("pin-x");
+                    x.set_text_content(Some("✕"));
+                    let _ = x.set_attribute("type", "button");
+                    let _ = x.set_attribute("title", "取消釘選");
+                    let _ = x.set_attribute("aria-label", &format!("取消釘選：{label}"));
+                    listen(&x, "click", move |e| {
+                        e.prevent_default();
+                        e.stop_propagation();
+                        spawn(async move {
+                            let mut v = load_pins().await;
+                            v[i] = None;
+                            save_pins(&v).await;
+                        });
+                    });
+                    slot.append_child(&x).unwrap();
+                    slot.set_title(&format!("{label}\n{}", p.url));
+                }
+                None => {
+                    let _ = slot.set_attribute("draggable", "false");
+                    let _ = slot.class_list().add_1("pin-empty");
+                    slot.set_text_content(Some("+"));
+                    slot.set_title("把網頁拖到這裡釘選");
+                }
+            }
+        }
+    }
+
+    /// 清單的網頁拖到格子上放開 = 釘選；釘選格之間拖曳 = 交換位置
+    fn setup_pins() {
+        for i in 0..PIN_SLOTS {
+            let slot: web_sys::Element = el(&format!("rc-pin-{i}")).unchecked_into();
+            crate::drag::sortable(
+                Sortable { item: slot.clone(), handle: Some(slot.clone()), zone: slot.clone(), group: "recent", id: format!("pin:{i}"), can_contain: false },
+                Rc::new(move |from, _to, _pos| {
+                    spawn(async move {
+                        let mut v = load_pins().await;
+                        if let Some(j) = from.strip_prefix("pin:").and_then(|s| s.parse::<usize>().ok()) {
+                            crate::apps::swap_pins(&mut v, j, i);
+                        } else {
+                            let title = LABELS.with(|l| l.borrow().get(&from).cloned()).unwrap_or_default();
+                            v[i] = Some(Pin { url: from, title });
+                        }
+                        save_pins(&v).await;
+                    })
+                }),
+            );
+        }
+        spawn(render_pins());
     }
 
     fn filter() -> Option<(&'static str, f64, f64)> {
@@ -408,8 +494,10 @@ mod view {
             return;
         }
         let now = chrome::now();
+        LABELS.with(|l| l.borrow_mut().clear());
         for r in shown {
             let label = label_of(titles, r);
+            LABELS.with(|l| l.borrow_mut().insert(r.url.clone(), label.to_string()));
             let li = doc().create_element("li").unwrap();
             li.set_class_name("bm-row recent-row");
             // 跟書籤一樣：網站圖示 + 名稱，右邊淡淡的瀏覽時間（滑鼠移上去換成按鈕）
@@ -487,9 +575,13 @@ mod view {
             li.append_child(&x).unwrap();
 
             crate::drag::sortable(
-                // 期間篩選中依時間排列，不能拖曳
-                Sortable { item: li.clone(), handle: (!filtered).then(|| li.clone()), zone: li.clone(), group: "recent", id: r.url.clone(), can_contain: false },
-                Rc::new(|from, to, pos| update(move |l| reorder(l, &from, &to, pos == Pos::After))),
+                // 期間篩選中依時間排列，不能調整順序（但還是可以拖到釘選格）
+                Sortable { item: li.clone(), handle: Some(li.clone()), zone: li.clone(), group: "recent", id: r.url.clone(), can_contain: false },
+                Rc::new(|from, to, pos| {
+                    if filter().is_none() && !from.starts_with("pin:") {
+                        update(move |l| reorder(l, &from, &to, pos == Pos::After))
+                    }
+                }),
             );
             ul.append_child(&li).unwrap();
         }
@@ -538,6 +630,7 @@ mod view {
     }
 
     pub fn start() {
+        setup_pins();
         on_click("recent-toggle", || set_open(!is_open()));
         on_click("recent-close", || set_open(false));
         on_click("recent-clear", || {

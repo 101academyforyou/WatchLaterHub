@@ -745,7 +745,8 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 .rf:hover { background: var(--pill); color: var(--fg); }
 .rf.on { background: color-mix(in srgb, var(--accent) 16%, var(--pill)); color: var(--accent); font-weight: 600; }
 .recent .bm-head h2 { flex: none !important; }
-.recent .bm-head .recent-filters { margin-right: auto; }
+/* 最近的釘選格：放得下幾個就顯示幾個（放不下的換到看不見的第二行） */
+.recent .bm-pins { flex: 1 1 0; min-width: 0; flex-wrap: wrap; justify-content: flex-end; height: 40px; overflow: hidden; margin: -6px 4px 0 0; padding: 6px 6px 0 0; box-sizing: border-box; }
 .rc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 12px 6px; font-size: 13px; color: var(--muted); }
 .rc-row { flex-direction: column; align-items: stretch; }
 .rc-line { display: flex; align-items: center; gap: 6px; }
@@ -757,7 +758,18 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 
 /* 開啟：電腦上的軟體 */
 #apps-toggle.on { background: color-mix(in srgb, var(--accent) 16%, var(--pill)); }
-.apps { right: 16px; width: min(var(--side-w), calc(100vw - 32px)); }
+/* 工具：版面跟右側書籤面板一樣 */
+.todo.apps {
+  top: 64px; right: 16px; bottom: 16px; width: var(--side-w); max-height: none; z-index: 5;
+  border-radius: 16px; box-shadow: none;
+}
+@media (max-width: 1840px) {
+  body:has(#apps:not([hidden])) main { padding-right: calc(var(--side-w) + 32px); }
+}
+@media (max-width: 1100px) {
+  .todo.apps { top: auto; height: 50vh; left: 16px; right: 16px; width: auto; box-shadow: var(--shadow); }
+  body:has(#apps:not([hidden])) main { padding-right: 16px; padding-bottom: calc(50vh + 32px); }
+}
 .apps .bm-head h2 { flex: none !important; }
 .apps .bm-head .spacer { flex: 1; }
 .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, 72px); justify-content: start; gap: 2px; padding: 10px 12px; overflow-y: auto; }

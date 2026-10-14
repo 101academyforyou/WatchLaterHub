@@ -352,6 +352,8 @@ const EXACT: &[(&str, &str)] = &[
     ("按上方「☆ 加入書籤」新增。", "Click “☆ Bookmark” above to add one."),
     ("取消釘選", "Unpin"),
     ("把書籤拖到這裡釘選", "Drag a bookmark here to pin it"),
+    ("把網頁拖到這裡釘選", "Drag a page here to pin it"),
+    ("釘選的網頁", "Pinned pages"),
     ("資料夾不能釘選，請拖一個書籤", "Folders can't be pinned; drag a bookmark"),
     ("‹ 上一層", "‹ Back"),
     ("（空的）", "(Empty)"),
