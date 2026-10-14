@@ -71,6 +71,14 @@ fn input_value(id: &str) -> String {
 // ---------- 收藏、TODO、書籤、最近：一次只開一個 ----------
 
 /// 打開 `keep` 之前先關掉其他的（"fav"、"todo"、"bm"、"recent"）
+/// 點的是頂列切換面板的按鈕嗎？是的話「點外面關閉」不要先關，交給按鈕切換，
+/// 否則面板會先關掉（中間內容移回來）再打開另一個，畫面會閃一下
+pub(crate) fn is_panel_toggle(n: &web_sys::Node) -> bool {
+    ["open-manage", "todo-toggle", "apps-toggle", "bm-toggle", "recent-toggle"]
+        .iter()
+        .any(|id| el(id).contains(Some(n)))
+}
+
 pub(crate) fn close_panels_except(keep: &str) {
     if keep != "fav" && dialog("manage").open() {
         dialog("manage").close();

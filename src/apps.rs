@@ -73,6 +73,18 @@ pub fn icon_url(domain: &str) -> String {
     format!("https://www.google.com/s2/favicons?domain={domain}&sz=64")
 }
 
+/// 圖示要試的網址（前面的載不到就換下一個）。Google 的網站圖示服務對部分網站
+/// 只給得出通用圖示（Drive、日曆變成 G，Copilot 變成地球），這些改用官方的圖示
+pub fn icon_srcs(domain: &str) -> Vec<String> {
+    let special: &[&str] = match domain {
+        "drive.google.com" => &["https://ssl.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png"],
+        "calendar.google.com" => &["https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_31_2x.png"],
+        "copilot.microsoft.com" => &["https://copilot.microsoft.com/favicon.ico"],
+        _ => &[],
+    };
+    special.iter().map(|s| s.to_string()).chain([icon_url(domain)]).collect()
+}
+
 // ---------- 純邏輯（可在本機 cargo test） ----------
 
 /// 網址要有通訊協定（vscode:、https: …）；不能是 javascript: 這類
@@ -163,10 +175,45 @@ mod view {
     }
 
     fn set_img(ico: &Element, cls: &str, src: &str) {
+        set_img_srcs(ico, cls, vec![src.to_string()]);
+    }
+
+    fn set_img_srcs(ico: &Element, cls: &str, srcs: Vec<String>) {
         ico.set_class_name(&format!("app-ico {cls}"));
         let _ = ico.remove_attribute("style");
         ico.set_inner_html(r#"<img alt="">"#);
-        ico.query_selector("img").unwrap().unwrap().unchecked_into::<web_sys::HtmlImageElement>().set_src(src);
+        load_srcs(&ico.query_selector("img").unwrap().unwrap().unchecked_into(), srcs);
+    }
+
+    /// 依序試每個網址，載不到（或圖太小）就換下一個
+    fn load_srcs(img: &web_sys::HtmlImageElement, srcs: Vec<String>) {
+        let mut rest = srcs.into_iter();
+        let Some(first) = rest.next() else { return };
+        let rest: Vec<String> = rest.collect();
+        if !rest.is_empty() {
+            let (img2, rest2) = (img.clone(), std::cell::RefCell::new(Some(rest)));
+            let next = move || {
+                if let Some(r) = rest2.borrow_mut().take() {
+                    img2.set_onerror(None);
+                    img2.set_onload(None);
+                    load_srcs(&img2, r);
+                }
+            };
+            let next = Rc::new(next);
+            let n1 = next.clone();
+            let on_err = wasm_bindgen::closure::Closure::<dyn Fn()>::new(move || n1());
+            let img3 = img.clone();
+            let on_load = wasm_bindgen::closure::Closure::<dyn Fn()>::new(move || {
+                if img3.natural_width() < 8 {
+                    next();
+                }
+            });
+            img.set_onerror(Some(on_err.as_ref().unchecked_ref()));
+            img.set_onload(Some(on_load.as_ref().unchecked_ref()));
+            on_err.forget();
+            on_load.forget();
+        }
+        img.set_src(&first);
     }
 
     async fn load() -> Vec<AppEntry> {
@@ -207,7 +254,7 @@ mod view {
         match (native_logo, a.icon.as_deref().or_else(|| preset_domain(&a.name)), a.name.as_str()) {
             // 舊版的電腦軟體項目：用存下的軟體圖示
             (Some(src), _, _) => set_img(ico, "native", &src),
-            (None, Some(d), _) => set_img(ico, "logo", &icon_url(d)),
+            (None, Some(d), _) => set_img_srcs(ico, "logo", icon_srcs(d)),
             (None, None, "Terminal") => {
                 let _ = ico.class_list().add_1("term");
                 ico.set_text_content(Some(">_"));
@@ -455,7 +502,7 @@ mod view {
             b.set_inner_html(r#"<span class="plus">＋</span><span class="pico"></span><span class="pname"></span>"#);
             let pico = b.query_selector(".pico").unwrap().unwrap();
             pico.set_inner_html(r#"<img alt="">"#);
-            pico.query_selector("img").unwrap().unwrap().unchecked_into::<web_sys::HtmlImageElement>().set_src(&icon_url(p.icon));
+            load_srcs(&pico.query_selector("img").unwrap().unwrap().unchecked_into(), icon_srcs(p.icon));
             b.query_selector(".pname").unwrap().unwrap().set_text_content(Some(p.name));
             listen(&b, "click", move |_| {
                 update(move |l| {
@@ -473,7 +520,7 @@ mod view {
             let inside = e
                 .target()
                 .and_then(|t| t.dyn_into::<web_sys::Node>().ok())
-                .map(|n| el("apps").contains(Some(&n)) || el("apps-toggle").contains(Some(&n)))
+                .map(|n| el("apps").contains(Some(&n)) || crate::ui::is_panel_toggle(&n))
                 .unwrap_or(false);
             if !inside {
                 set_open(false);
@@ -514,6 +561,9 @@ mod tests {
         assert_eq!(preset_domain("zoom.us"), Some("zoom.us"));
         assert_eq!(preset_domain("Terminal"), None);
         assert_eq!(preset_domain("Safari"), None);
+        assert_eq!(icon_srcs("slack.com"), [icon_url("slack.com")]);
+        assert!(icon_srcs("drive.google.com")[0].contains("drive_2020q4"));
+        assert_eq!(icon_srcs("copilot.microsoft.com").last(), Some(&icon_url("copilot.microsoft.com")));
         assert_eq!(
             PRESETS.iter().map(|p| p.name).collect::<Vec<_>>(),
             ["Claude", "ChatGPT", "Gemini", "VS Code", "Obsidian", "Notion", "Discord", "Slack", "Google Meet", "Zoom", "Teams", "Spotify",

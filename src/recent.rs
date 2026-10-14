@@ -665,7 +665,7 @@ mod view {
                 .and_then(|t| t.dyn_into::<web_sys::Node>().ok())
                 .map(|n| {
                     el("recent").contains(Some(&n))
-                        || el("recent-toggle").contains(Some(&n))
+                        || crate::ui::is_panel_toggle(&n)
                         || el("bm-dialog").contains(Some(&n)) // 在「加入書籤」視窗裡操作時不要關掉
                 })
                 .unwrap_or(false);
