@@ -54,7 +54,7 @@ async fn render_add_button() {
         Some(v) => !chrome::bookmarks_find_url(&v.watch_url()).await.is_empty(),
         None => false,
     };
-    btn.set_text_content(Some(if saved { "★ 已加入書籤" } else { "☆ 加入書籤" }));
+    btn.set_text_content(Some(if saved { "★ 已加入" } else { "☆ 加入" }));
     btn.set_title(if saved { "編輯這部影片的書籤" } else { "新增書籤（預先填入目前這部影片）" });
     let _ = btn.class_list().toggle_with_force("on", saved);
 }
@@ -554,7 +554,7 @@ async fn render_tree() {
         .filter(|n| n.children.as_ref().is_some_and(|c| !c.is_empty()))
         .collect();
     if tops.is_empty() {
-        box_.set_inner_html(r#"<div class="bm-none">還沒有書籤。<br>按上方「☆ 加入書籤」新增。</div>"#);
+        box_.set_inner_html(r#"<div class="bm-none">還沒有書籤。<br>按上方「☆ 加入」新增。</div>"#);
         return;
     }
     for n in tops {

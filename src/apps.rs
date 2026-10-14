@@ -1,13 +1,11 @@
-//! 「工具」：加入電腦上的軟體，點一下就開啟
+//! 「工具」：加入常用的網站或軟體，點一下就開啟
 //!
-//! - 電腦上的軟體：透過「電腦小幫手」（launcher/，Chrome Native Messaging）開啟；要先執行 ./install-launcher.sh
-//! - 有專屬網址的軟體（vscode://、slack:// …）：不用小幫手，直接用網址開啟
+//! 一律用網址開啟：網頁（https://…）或軟體的專屬網址（vscode://、slack:// …）
 
 use serde::{Deserialize, Serialize};
 
 pub const KEY: &str = "apps";
-pub const HOST: &str = "com.watchlaterhub.launcher";
-/// 電腦上軟體的圖示快取：{ 路徑: data URL }（由小幫手讀取軟體本身的圖示）
+/// 舊版「電腦小幫手」存下的軟體圖示：{ 路徑: data URL }（舊的項目顯示用）
 pub const LOGOS_KEY: &str = "appLogos2";
 /// 標題列的 5 個常用軟體（存 AppEntry 的 id）
 pub const PINS_KEY: &str = "appPins";
@@ -19,7 +17,7 @@ pub const OLD_LOGOS_KEY: &str = "appLogos";
 pub struct AppEntry {
     pub id: String,
     pub name: String,
-    /// "app"：電腦上的軟體（target = 路徑）；"url"：用網址開啟（target = 網址）
+    /// "url"：用網址開啟（target = 網址）；"app"：舊版透過電腦小幫手開啟的軟體（已不支援）
     pub kind: String,
     pub target: String,
     /// 圖示用的官網網域（快速加入的軟體才有）
@@ -27,20 +25,14 @@ pub struct AppEntry {
     pub icon: Option<String>,
 }
 
-#[derive(Deserialize, Clone, Debug, PartialEq)]
-pub struct Installed {
-    pub name: String,
-    pub path: String,
-}
-
 /// 快速加入的軟體
 pub struct Preset {
     pub name: &'static str,
     /// 圖示：官網網域（用 Google 的網站圖示服務取得各軟體官網的 favicon）
     pub icon: &'static str,
-    /// 電腦上的軟體名稱（有裝桌面版就透過小幫手開啟）
+    /// 電腦上的軟體名稱（舊項目對應圖示用）
     pub apps: &'static [&'static str],
-    /// 沒裝桌面版時的開啟方式：專屬網址或網頁
+    /// 開啟方式：專屬網址或網頁
     pub url: &'static str,
 }
 
@@ -59,7 +51,7 @@ pub const PRESETS: [Preset; 12] = [
     Preset { name: "Spotify", icon: "open.spotify.com", apps: &["Spotify"], url: "spotify:" },
 ];
 
-/// 電腦上的軟體名稱對到快速加入的軟體 → 官網網域（小幫手還沒回傳圖示前先用）
+/// 軟體名稱對到快速加入的軟體 → 官網網域
 pub fn preset_domain(name: &str) -> Option<&'static str> {
     PRESETS.iter().find(|p| !p.icon.is_empty() && p.apps.iter().any(|a| a.eq_ignore_ascii_case(name.trim()))).map(|p| p.icon)
 }
@@ -67,18 +59,6 @@ pub fn preset_domain(name: &str) -> Option<&'static str> {
 /// 網站圖示網址
 pub fn icon_url(domain: &str) -> String {
     format!("https://www.google.com/s2/favicons?domain={domain}&sz=64")
-}
-
-/// 快速加入：有裝桌面版 → (app, 路徑)；否則 → (url, 網址)
-pub fn resolve_preset(p: &Preset, installed: Option<&[Installed]>) -> (&'static str, String) {
-    if let Some(list) = installed {
-        for want in p.apps {
-            if let Some(a) = list.iter().find(|a| a.name.eq_ignore_ascii_case(want)) {
-                return ("app", a.path.clone());
-            }
-        }
-    }
-    ("url", p.url.to_string())
 }
 
 // ---------- 純邏輯（可在本機 cargo test） ----------
@@ -107,9 +87,8 @@ pub fn add(list: &mut Vec<AppEntry>, name: &str, kind: &str, target: &str, id: S
 }
 
 /// 加入快速加入的軟體（帶圖示）
-pub fn add_preset(list: &mut Vec<AppEntry>, p: &Preset, installed: Option<&[Installed]>, id: String) -> bool {
-    let (kind, target) = resolve_preset(p, installed);
-    let ok = add(list, p.name, kind, &target, id.clone());
+pub fn add_preset(list: &mut Vec<AppEntry>, p: &Preset, id: String) -> bool {
+    let ok = add(list, p.name, "url", p.url, id.clone());
     if ok && !p.icon.is_empty() {
         if let Some(a) = list.iter_mut().find(|a| a.id == id) {
             a.icon = Some(p.icon.to_string());
@@ -163,23 +142,12 @@ mod view {
     use crate::ui::{doc, el, hide, listen, on_click, spawn};
     use std::cell::RefCell;
     use std::rc::Rc;
-    use wasm_bindgen::prelude::*;
     use wasm_bindgen::JsCast;
     use web_sys::{Element, HtmlInputElement, KeyboardEvent};
 
-    #[wasm_bindgen]
-    extern "C" {
-        #[wasm_bindgen(js_namespace = ["chrome", "runtime"], js_name = sendNativeMessage, catch)]
-        async fn send_native_raw(host: &str, msg: JsValue) -> Result<JsValue, JsValue>;
-    }
-
     thread_local! {
-        /// 小幫手回報的已安裝軟體（None = 小幫手沒裝或連不上）
-        static INSTALLED: RefCell<Option<Vec<Installed>>> = const { RefCell::new(None) };
-        /// 軟體圖示快取（路徑 → data URL）
+        /// 舊版存下的軟體圖示（路徑 → data URL）
         static LOGOS: RefCell<std::collections::HashMap<String, String>> = RefCell::new(Default::default());
-        /// 這次開啟新分頁已經問過小幫手的路徑（沒有圖示的不重複問）
-        static ASKED: RefCell<std::collections::HashSet<String>> = RefCell::new(Default::default());
     }
 
     fn set_img(ico: &Element, cls: &str, src: &str) {
@@ -187,78 +155,6 @@ mod view {
         let _ = ico.remove_attribute("style");
         ico.set_inner_html(r#"<img alt="">"#);
         ico.query_selector("img").unwrap().unwrap().unchecked_into::<web_sys::HtmlImageElement>().set_src(src);
-    }
-
-    /// 圖片載得出來、而且不是整張透明的空白圖
-    async fn visible(src: &str) -> bool {
-        let img = web_sys::HtmlImageElement::new().unwrap();
-        let p = js_sys::Promise::new(&mut |ok, bad| {
-            img.set_onload(Some(ok.unchecked_ref()));
-            img.set_onerror(Some(bad.unchecked_ref()));
-        });
-        img.set_src(src);
-        if wasm_bindgen_futures::JsFuture::from(p).await.is_err() || img.natural_width() == 0 {
-            return false;
-        }
-        let Ok(canvas) = doc().create_element("canvas") else { return true };
-        let canvas: web_sys::HtmlCanvasElement = canvas.unchecked_into();
-        let n = 24;
-        canvas.set_width(n);
-        canvas.set_height(n);
-        let Some(ctx) = canvas.get_context("2d").ok().flatten() else { return true };
-        let ctx: web_sys::CanvasRenderingContext2d = ctx.unchecked_into();
-        if ctx.draw_image_with_html_image_element_and_dw_and_dh(&img, 0.0, 0.0, n as f64, n as f64).is_err() {
-            return true;
-        }
-        match ctx.get_image_data(0.0, 0.0, n as f64, n as f64) {
-            // 每個像素 4 個值，第 4 個是透明度
-            Ok(d) => d.data().0.chunks(4).filter(|px| px[3] > 16).count() > 8,
-            Err(_) => true,
-        }
-    }
-
-    /// 向小幫手要軟體的圖示，存起來並換上
-    fn fetch_logo(path: String) {
-        if ASKED.with(|a| !a.borrow_mut().insert(path.clone())) {
-            return;
-        }
-        spawn(async move {
-            let Ok(v) = native(serde_json::json!({ "action": "icon", "path": path })).await else { return };
-            let Some(icon) = v["icon"].as_str().filter(|i| i.starts_with("data:image/")).map(str::to_string) else { return };
-            if !visible(&icon).await {
-                return;
-            }
-            // 畫面可能已重畫，換掉目前所有這個軟體的圖示
-            if let Ok(list) = el("apps").query_selector_all(".app-ico[data-path]") {
-                for i in 0..list.length() {
-                    let Some(n) = list.item(i) else { continue };
-                    let e: Element = n.unchecked_into();
-                    if e.get_attribute("data-path").as_deref() == Some(path.as_str()) {
-                        set_img(&e, "native", &icon);
-                    }
-                }
-            }
-            // 同時有好幾個圖示回來時，都以記憶體中的完整清單寫入，避免互相覆蓋
-            let all = LOGOS.with(|l| {
-                l.borrow_mut().insert(path, icon);
-                l.borrow().clone()
-            });
-            chrome::set(&[(LOGOS_KEY, to_js(&all))]).await;
-        });
-    }
-
-    /// 連線到電腦小幫手要使用者同意（第一次用到時，跟著使用者的點擊跳出 Chrome 的同意視窗）
-    async fn native(msg: serde_json::Value) -> Result<serde_json::Value, String> {
-        if !chrome::request_permission(&["nativeMessaging"], &[]).await {
-            return Err("需要允許連線到電腦小幫手".into());
-        }
-        let r = send_native_raw(HOST, to_js(&msg)).await.map_err(chrome::err_msg)?;
-        let v: serde_json::Value = chrome::from_js(&r).unwrap_or(serde_json::Value::Null);
-        if v["ok"].as_bool() == Some(true) {
-            Ok(v)
-        } else {
-            Err(v["error"].as_str().unwrap_or("小幫手沒有回應").to_string())
-        }
     }
 
     async fn load() -> Vec<AppEntry> {
@@ -271,7 +167,6 @@ mod view {
             f(&mut list);
             chrome::set(&[(KEY, to_js(&list))]).await;
             render(&list);
-            render_installed();
         });
     }
 
@@ -290,20 +185,15 @@ mod view {
             chrome::open_in_this_tab(&a.target).await;
             return;
         }
-        match native(serde_json::json!({ "action": "open", "path": a.target })).await {
-            Ok(_) => status(&format!("已開啟「{}」", a.name), false),
-            Err(e) if e.contains("not found") || e.contains("Specified native messaging host") => {
-                status(&format!("無法開啟「{}」", a.name), true);
-            }
-            Err(e) => status(&format!("無法開啟「{}」：{e}", a.name), true),
-        }
+        // 舊版透過電腦小幫手開啟的軟體：這個功能已移除
+        status(&format!("「{}」是舊版的電腦軟體項目，已不能開啟；請移除後用網址重新加入", a.name), true);
     }
 
     /// 軟體圖示：軟體本身的圖示 → 官網 logo → 終端機 >_ → 彩色首字母
     fn fill_icon(ico: &Element, a: &AppEntry) {
         let native_logo = if a.kind == "app" { LOGOS.with(|l| l.borrow().get(&a.target).cloned()) } else { None };
         match (native_logo, a.icon.as_deref().or_else(|| preset_domain(&a.name)), a.name.as_str()) {
-            // 電腦上的軟體：用軟體本身的圖示
+            // 舊版的電腦軟體項目：用存下的軟體圖示
             (Some(src), _, _) => set_img(ico, "native", &src),
             (None, Some(d), _) => set_img(ico, "logo", &icon_url(d)),
             (None, None, "Terminal") => {
@@ -315,12 +205,6 @@ mod view {
                 ico.set_text_content(Some(&letter));
                 let _ = ico.set_attribute("style", &format!("background: hsl({hue} 55% 46%)"));
             }
-        }
-        if a.kind == "app" {
-            let _ = ico.set_attribute("data-path", &a.target);
-        }
-        if a.kind == "app" && LOGOS.with(|l| !l.borrow().contains_key(&a.target)) {
-            fetch_logo(a.target.clone());
         }
     }
 
@@ -485,78 +369,6 @@ mod view {
         spawn(render_pins());
     }
 
-    /// 新增區：小幫手回報的已安裝軟體（可搜尋，點一下加入）
-    fn render_installed() {
-        let added: Vec<String> = Vec::new();
-        let box_ = el("apps-installed");
-        let q = crate::ui::search_text("apps-search");
-        spawn(async move {
-            let mut added = added;
-            added.extend(load().await.into_iter().map(|a| a.target));
-            let installed = INSTALLED.with(|i| i.borrow().clone());
-            box_.set_inner_html("");
-            let Some(apps) = installed else { return };
-            // 只在搜尋時列出符合的軟體
-            if q.is_empty() {
-                return;
-            }
-            let shown: Vec<&Installed> = apps.iter().filter(|a| crate::videos::matches(&q, &[&a.name])).take(30).collect();
-            if shown.is_empty() {
-                box_.set_inner_html(r#"<div class="todo-none">找不到符合的軟體</div>"#);
-            }
-            for a in shown {
-                let b = doc().create_element("button").unwrap();
-                b.set_class_name("app-pick");
-                let _ = b.set_attribute("type", "button");
-                let is_added = added.contains(&a.path);
-                b.set_text_content(Some(&format!("{}{}", a.name, if is_added { "  ✓" } else { "" })));
-                let _ = b.set_attribute("title", &a.path);
-                if is_added {
-                    let _ = b.class_list().add_1("on");
-                }
-                let (name, path) = (a.name.clone(), a.path.clone());
-                listen(&b, "click", move |_| {
-                    let (name, path) = (name.clone(), path.clone());
-                    update(move |l| {
-                        add(l, &name, "app", &path, new_id());
-                    });
-                });
-                box_.append_child(&b).unwrap();
-            }
-        });
-    }
-
-    /// 檢查小幫手、取得已安裝軟體
-    async fn check_helper() {
-        // 還沒同意連線到小幫手：不主動跳同意視窗，顯示「連接電腦小幫手」按鈕讓使用者自己按
-        let allowed = chrome::has_permission(&["nativeMessaging"], &[]).await;
-        hide("apps-allow", allowed);
-        if !allowed {
-            INSTALLED.with(|i| *i.borrow_mut() = None);
-            hide("apps-helper-on", true);
-            hide("apps-helper-off", true);
-            render_installed();
-            return;
-        }
-        match native(serde_json::json!({ "action": "list" })).await {
-            Ok(v) => {
-                let apps: Vec<Installed> = serde_json::from_value(v["apps"].clone()).unwrap_or_default();
-                INSTALLED.with(|i| *i.borrow_mut() = Some(apps));
-                hide("apps-helper-on", false);
-                hide("apps-helper-off", true);
-                status("", false);
-            }
-            Err(_) => {
-                // 已同意連線，但電腦上沒有安裝小幫手（或連不上）：說明怎麼安裝
-                INSTALLED.with(|i| *i.borrow_mut() = None);
-                hide("apps-helper-on", true);
-                hide("apps-helper-off", false);
-                status("", false);
-            }
-        }
-        render_installed();
-    }
-
     fn add_url_from_inputs() {
         let name: HtmlInputElement = el("apps-url-name").unchecked_into();
         let url: HtmlInputElement = el("apps-url").unchecked_into();
@@ -593,7 +405,6 @@ mod view {
                 let list = load().await;
                 hide("apps-add", !list.is_empty());
                 render(&list);
-                check_helper().await;
             });
         }
     }
@@ -610,15 +421,6 @@ mod view {
 
     pub fn start() {
         on_click("apps-toggle", || set_open(!is_open()));
-        on_click("apps-allow", || {
-            hide("apps-add", false);
-            spawn(async {
-                if chrome::request_permission(&["nativeMessaging"], &[]).await {
-                    check_helper().await;
-                }
-            })
-        });
-        on_click("apps-recheck", || spawn(check_helper()));
         on_click("apps-close", || set_open(false));
         on_click("apps-add-btn", || {
             let show = el("apps-add").hidden();
@@ -631,9 +433,8 @@ mod view {
                 add_url_from_inputs();
             }
         });
-        crate::ui::search_box("apps-search", render_installed);
         setup_pins();
-        // 快速加入（有裝桌面版就用桌面版，否則用專屬網址或網頁）
+        // 快速加入（用專屬網址或網頁開啟）
         let presets = el("apps-presets");
         for (i, p) in PRESETS.iter().enumerate() {
             let b = doc().create_element("button").unwrap();
@@ -645,9 +446,8 @@ mod view {
             pico.query_selector("img").unwrap().unwrap().unchecked_into::<web_sys::HtmlImageElement>().set_src(&icon_url(p.icon));
             b.query_selector(".pname").unwrap().unwrap().set_text_content(Some(p.name));
             listen(&b, "click", move |_| {
-                let installed = INSTALLED.with(|x| x.borrow().clone());
                 update(move |l| {
-                    add_preset(l, &PRESETS[i], installed.as_deref(), new_id());
+                    add_preset(l, &PRESETS[i], new_id());
                 })
             });
             presets.append_child(&b).unwrap();
@@ -702,20 +502,14 @@ mod tests {
         assert_eq!(preset_domain("zoom.us"), Some("zoom.us"));
         assert_eq!(preset_domain("Terminal"), None);
         assert_eq!(preset_domain("Safari"), None);
-        let inst = |n: &str, p: &str| Installed { name: n.into(), path: p.into() };
-        let list = vec![inst("Claude", "/Applications/Claude.app"), inst("zoom.us", "/Applications/zoom.us.app")];
-        let by = |n: &str| PRESETS.iter().find(|p| p.name == n).unwrap();
-        assert_eq!(resolve_preset(by("Claude"), Some(&list)), ("app", "/Applications/Claude.app".to_string()));
-        assert_eq!(resolve_preset(by("Claude"), None), ("url", "https://claude.ai/".to_string()));
-        assert_eq!(resolve_preset(by("Zoom"), Some(&list)), ("app", "/Applications/zoom.us.app".to_string()));
-        assert_eq!(resolve_preset(by("Google Meet"), Some(&list)).0, "url");
         assert_eq!(
             PRESETS.iter().map(|p| p.name).collect::<Vec<_>>(),
             ["Claude", "ChatGPT", "Gemini", "VS Code", "Obsidian", "Notion", "Discord", "Slack", "Google Meet", "Zoom", "Teams", "Spotify"]
         );
+        let by = |n: &str| PRESETS.iter().find(|p| p.name == n).unwrap();
         let mut l2 = vec![];
-        assert!(add_preset(&mut l2, by("Slack"), None, "s".into()));
-        assert_eq!(l2[0].icon.as_deref(), Some("slack.com"));
+        assert!(add_preset(&mut l2, by("Slack"), "s".into()));
+        assert_eq!((l2[0].kind.as_str(), l2[0].target.as_str(), l2[0].icon.as_deref()), ("url", "slack://open", Some("slack.com")));
         let s = |v: &str| Some(v.to_string());
         let mut pins = vec![];
         let at = |v: &[(usize, &str)]| {

@@ -325,8 +325,6 @@ dialog h3 { margin: 18px 0 0; font-size: 14px; color: var(--muted); font-weight:
   border: 1px solid var(--line); border-radius: 6px; background: var(--bg);
 }
 .todo-none { padding: 22px 12px; text-align: center; color: var(--muted); font-size: 13px; }
-.apps-allow { display: block; margin: 0 0 8px; font-size: 13px; }
-.apps-allow[hidden] { display: none; }
 .perm-ask { display: flex; flex-direction: column; align-items: center; gap: 12px; line-height: 1.6; }
 .todo-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -783,13 +781,6 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 .app-tile:hover .bm-del { opacity: 1; }
 .apps-add { padding: 4px 12px 10px; border-top: 1px solid var(--line); overflow-y: auto; }
 .apps-sub { margin: 10px 0 6px; font-size: 12px; color: var(--muted); }
-.apps-add .panel-search { margin: 0 0 6px; }
-.apps-installed { display: flex; flex-wrap: wrap; gap: 6px; max-height: 150px; overflow-y: auto; }
-.app-pick { border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12.5px; cursor: pointer; }
-.app-pick:hover { background: var(--pill); }
-.app-pick.on { border-color: var(--accent); color: var(--accent); }
-.apps-helper-off { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--pill); font-size: 12.5px; line-height: 1.7; }
-.apps-helper-off code { display: inline-block; margin: 4px 0; padding: 2px 8px; border-radius: 6px; background: var(--bg); font-size: 12.5px; }
 .apps-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
 .apps-presets .chip { padding: 5px 10px; font-size: 12px; }
 .apps-url-row { display: flex; gap: 6px; margin-top: 8px; }
@@ -814,7 +805,6 @@ button.todo-weather:hover, button.todo-weather.on { background: var(--line); }
 .app-ico.logo img { width: 26px; height: 26px; border-radius: 5px; }
 .app-ico.native { background: none; border-radius: 0; }
 .app-ico.native img { width: 40px; height: 40px; object-fit: contain; }
-.apps-installed:empty { display: none; }
 
 /* 加入書籤視窗：加入到資料夾最上方 */
 .bm-top-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 13px; color: var(--fg); cursor: pointer; }

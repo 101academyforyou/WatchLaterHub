@@ -40,8 +40,7 @@
     "unlimitedStorage"
   ],
   "optional_permissions": [
-    "history",
-    "nativeMessaging"
+    "history"
   ],
   "optional_host_permissions": [
     "https://www.youtube.com/*",

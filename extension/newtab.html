@@ -15,7 +15,7 @@
     <button id="ntp-off" class="ntp-btn" type="button" title="改用 Chrome 原本的新分頁（按瀏覽器工具列的 WatchLaterHub 圖示可以恢復）"><img src="icons/icon32.png" alt="WatchLaterHub"></button>
     <button id="open-manage" class="chip">☰ 收藏 <span id="count"></span></button>
     <button id="todo-toggle" class="chip" aria-controls="todo" aria-expanded="false" title="待辦清單">✓ TODO <span id="todo-count" class="cnt"></span></button>
-    <button id="apps-toggle" class="chip" aria-controls="apps" aria-expanded="false" title="開啟電腦上的軟體">⏺︎ 工具</button>
+    <button id="apps-toggle" class="chip" aria-controls="apps" aria-expanded="false" title="常用的網站和軟體">⏺︎ 工具</button>
     <button id="bm-toggle" class="chip" aria-controls="bm" title="顯示／隱藏書籤">★ 書籤</button>
     <button id="recent-toggle" class="chip" aria-controls="recent" aria-expanded="false" title="最近瀏覽"><svg class="drop" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c-.3 0-.6.15-.78.4C9.6 5.1 5.5 10.6 5.5 14.5a6.5 6.5 0 0 0 13 0c0-3.9-4.1-9.4-5.72-11.6A.97.97 0 0 0 12 2.5z"/></svg> 最近</button>
     <button id="lang-toggle" class="chip lang-chip" type="button" data-nt>EN</button>
@@ -190,18 +190,6 @@
     </div>
     <div id="apps-grid" class="apps-grid"></div>
     <div id="apps-add" class="apps-add" hidden>
-      <div id="apps-helper-on" hidden>
-        <div class="panel-search"><svg class="ps-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="apps-search" type="search" placeholder="搜尋電腦上的軟體" autocomplete="off" spellcheck="false" aria-label="搜尋電腦上的軟體"></div>
-        <div id="apps-installed" class="apps-installed"></div>
-      </div>
-      <button id="apps-allow" class="btn apps-allow" type="button" hidden>🔌 連接電腦小幫手（開啟電腦上的軟體）</button>
-      <div id="apps-helper-off" class="apps-helper-off" hidden>
-        <div>找不到電腦小幫手，所以還不能搜尋電腦上的軟體。</div>
-        <div>請先在電腦上安裝小幫手（只需一次）：在專案資料夾執行</div>
-        <code>./install-launcher.sh</code>
-        <div>裝好後重新開啟 Chrome，再按「重新檢查」。</div>
-        <button id="apps-recheck" class="btn" type="button">重新檢查</button>
-      </div>
       <div id="apps-presets" class="apps-presets"></div>
       <div class="apps-url-row">
         <input id="apps-url-name" type="text" placeholder="名稱" autocomplete="off">
@@ -275,7 +263,7 @@
         <div id="bm-pin-14" class="bm-pin pin-empty"></div>
         <div id="bm-pin-15" class="bm-pin pin-empty"></div>
       </div>
-      <button id="bm-add" class="chip bm-add">☆ 加入書籤</button>
+      <button id="bm-add" class="chip bm-add">☆ 加入</button>
       <button id="bm-close" class="x" aria-label="隱藏書籤">✕</button>
     </div>
     <div class="panel-search bm-search-box"><svg class="ps-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="bm-search" type="search" placeholder="搜尋書籤" autocomplete="off" spellcheck="false" aria-label="搜尋書籤"></div>

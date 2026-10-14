@@ -14,7 +14,7 @@ Chrome 新分頁：Google 風格搜尋框，上方隨機顯示一部你在 YouTu
 - **任務矩陣**：TODO 標題列「✦ 任務矩陣」打開緊急／重要 2×2 視窗；未分類的待辦拖進象限、象限之間互拖、直接在象限新增；TODO 清單會標示所屬象限
 - **英文版**：頂列右邊的「EN／中文」切換語言（第一次會依瀏覽器語言自動選擇），右鍵選單、提醒小視窗、天氣地名也會跟著換
 - **切換回 Chrome 原本的新分頁**：按新分頁右上（「收藏」左邊）的 WatchLaterHub 圖示，就改用 Chrome 原本的新分頁；按瀏覽器工具列上的 WatchLaterHub 圖示可以在兩者之間切換（暫停時圖示上顯示「OFF」；工具列沒看到圖示的話，從拼圖圖示把它釘選出來）
-- **權限第一次用到才詢問**：安裝時只要求新分頁與書籤；「最近」（瀏覽紀錄）、「工具」（電腦小幫手）、Google 登入與讀取 YouTube（youtube.com、googleapis.com）、天氣的「使用目前位置」都在第一次使用時才跳出 Chrome 的同意視窗
+- **權限第一次用到才詢問**：安裝時只要求新分頁與書籤；「最近」（瀏覽紀錄）、Google 登入與讀取 YouTube（youtube.com、googleapis.com）、天氣的「使用目前位置」都在第一次使用時才跳出 Chrome 的同意視窗
 - **TODO 固定在新分頁**：TODO 底部「匯出 CSV」左邊的 WatchLaterHub 圖示，按一下變亮後，不論上次開著什麼，新分頁一律打開 TODO；再按一下取消
 - **新分頁記住上次的面板**：第一次使用時開新分頁會打開 TODO；之後用頂列按鈕或 ✕ 開關 TODO、書籤、最近、工具，新分頁就維持上次的狀態（都關掉就什麼都不開；點頁面其他地方自動收起不算）。游標一律在搜尋框
 - **TODO 筆記**：每項待辦的 📝 打開小視窗，可改主題、寫更多筆記；圖片和任何檔案直接放在筆記裡游標的位置（貼上、按「上傳檔案」或拖進來），文字、圖片、附件混排；點附件時 PDF、圖片、影音、文字檔在新分頁打開，其他類型（Word、Excel、壓縮檔…）直接下載（單檔上限 30 MB）；點一下圖片可選 25%／50%／75%／100%／原始大小，或拖右下角自由調整大小，點兩下放大檢視；太大的圖會自動縮小
@@ -23,7 +23,7 @@ Chrome 新分頁：Google 風格搜尋框，上方隨機顯示一部你在 YouTu
 - **搜尋**：TODO、書籤、最近都有搜尋框，打字即時篩選（多個關鍵字以空白分隔），Esc 清空
 - **最近**：頂列「💧 最近」打開跟書籤一樣的右側面板，列出最近瀏覽的網頁（右邊顯示幾分鐘前；滑鼠移上去可 ✎ 改名稱、☆ 加入書籤、✕ 移除）（來自 Chrome 瀏覽紀錄，最多 30 筆；「今天／昨天／前天／本週／自訂（24 小時制，可選到分鐘）」可篩選期間，只列出在那段時間內真的瀏覽過的網頁），可點開、拖曳排序、☆ 加入書籤（已是書籤顯示 ★）、✕ 從清單移除（不會刪除瀏覽紀錄）
 - **書籤列**：頂列左側跟 Chrome 一樣顯示書籤列的書籤，資料夾點開是下拉選單（可一層層點進子資料夾），放不下的收進「»」；可拖曳調整順序，也能跟右側書籤面板互相拖曳；按右鍵編輯書籤（資料夾則是改名稱）
-- **工具**：頂列「⏺︎ 工具」加入電腦上的軟體，點一下就開啟（需安裝一次電腦小幫手，見下方）；快速加入 Claude、ChatGPT、Gemini、VS Code、Obsidian、Notion、Discord、Slack、Google Meet、Zoom、Teams、Spotify（有裝桌面版就開桌面版，否則用專屬網址或網頁）；搜尋框可找電腦上的其他軟體
+- **工具**：頂列「⏺︎ 工具」加入常用的網站或軟體，點一下就開啟（用網址或軟體的專屬網址，例如 vscode://）；快速加入 Claude、ChatGPT、Gemini、VS Code、Obsidian、Notion、Discord、Slack、Google Meet、Zoom、Teams、Spotify
 - **右側書籤面板**：標題旁有 5 個釘選格，把書籤拖上去即可釘選、點一下開啟、✕ 取消；顯示 Chrome 書籤（書籤列、其他書籤…，資料夾可展開收合並記住狀態），在任何地方新增／修改書籤都會即時更新；右上「★ 書籤」可開關
 - 書籤面板的「☆ 加入書籤」：開啟視窗輸入名稱、網址、選資料夾（可「＋ 新資料夾」直接建立）後儲存（預先填入目前這部影片；這部影片已在書籤裡時變成編輯／移除）
 - 每個書籤右方的 ✎ 可直接編輯名稱、網址與資料夾；✕ 可直接移除，6 秒內可按「復原」
@@ -71,8 +71,6 @@ src/
   i18n.rs      英文版：中英對照表，翻譯畫面上的文字（有單元測試）
   todo_note.rs TODO 的 📝 筆記小視窗（筆記、貼上／上傳圖片）
   apps.rs      「工具」：開啟電腦上的軟體（有單元測試）
-launcher/      電腦小幫手（Native Messaging host，獨立的 Rust 專案，有單元測試）
-install-launcher.sh  安裝小幫手
   reminder_page.rs  TODO 提醒小視窗（extension/reminder.html）
   playlist.rs  播放清單網址 → 所有影片連結（讀取公開頁面，有單元測試）
   youtube.rs   Google 登入（帳號選擇畫面）與 YouTube Data API 同步
@@ -107,20 +105,6 @@ extension/
    https://lnokcijoconplpecgocjgkhhagkdmcce.chromiumapp.org/
    ```
 4. 把用戶端 ID 填進 `src/config.rs` 的 `GOOGLE_CLIENT_ID`（已填入 `627463072769-…`），重新 `./build.sh`
-
-### 開啟電腦上的軟體（電腦小幫手）
-
-Chrome 擴充功能基於安全不能直接開啟程式，所以要裝一個小幫手（Chrome Native Messaging host，原始碼在 `launcher/`）。
-在專案資料夾執行一次：
-
-```bash
-./install-launcher.sh
-```
-
-會編譯 `launcher/`、把程式放到 `~/Library/Application Support/WatchLaterHub/`（macOS），並在 Chrome 的
-`NativeMessagingHosts` 資料夾寫入 `com.watchlaterhub.launcher.json`（只允許 WatchLaterHub 的擴充功能 ID 呼叫）。
-小幫手只會列出與開啟電腦上已安裝的軟體（macOS 掃描 /Applications 等），不會執行其他指令。
-移除：刪除上述兩個位置的檔案即可。支援 macOS 與 Linux。
 
 `GOOGLE_CLIENT_ID` 設成空字串時，使用者第一次按 Continue with Google 會看到設定精靈，可以直接貼上。
 
