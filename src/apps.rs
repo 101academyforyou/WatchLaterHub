@@ -36,7 +36,7 @@ pub struct Preset {
     pub url: &'static str,
 }
 
-pub const PRESETS: [Preset; 12] = [
+pub const PRESETS: [Preset; 24] = [
     Preset { name: "Claude", icon: "claude.ai", apps: &["Claude"], url: "https://claude.ai/" },
     Preset { name: "ChatGPT", icon: "chatgpt.com", apps: &["ChatGPT"], url: "https://chatgpt.com/" },
     Preset { name: "Gemini", icon: "gemini.google.com", apps: &["Gemini"], url: "https://gemini.google.com/" },
@@ -49,6 +49,18 @@ pub const PRESETS: [Preset; 12] = [
     Preset { name: "Zoom", icon: "zoom.us", apps: &["zoom.us", "Zoom", "Zoom Workplace"], url: "zoommtg://" },
     Preset { name: "Teams", icon: "teams.microsoft.com", apps: &["Microsoft Teams", "Microsoft Teams (work or school)", "Microsoft Teams classic"], url: "msteams:" },
     Preset { name: "Spotify", icon: "open.spotify.com", apps: &["Spotify"], url: "spotify:" },
+    Preset { name: "Perplexity", icon: "perplexity.ai", apps: &["Perplexity"], url: "https://www.perplexity.ai/" },
+    Preset { name: "Copilot", icon: "copilot.microsoft.com", apps: &["Copilot", "Microsoft Copilot"], url: "https://copilot.microsoft.com/" },
+    Preset { name: "Gmail", icon: "mail.google.com", apps: &[], url: "https://mail.google.com/" },
+    Preset { name: "Google Drive", icon: "drive.google.com", apps: &["Google Drive"], url: "https://drive.google.com/" },
+    Preset { name: "Google Calendar", icon: "calendar.google.com", apps: &[], url: "https://calendar.google.com/" },
+    Preset { name: "YouTube", icon: "youtube.com", apps: &[], url: "https://www.youtube.com/" },
+    Preset { name: "GitHub", icon: "github.com", apps: &["GitHub Desktop"], url: "https://github.com/" },
+    Preset { name: "Figma", icon: "figma.com", apps: &["Figma"], url: "https://www.figma.com/" },
+    Preset { name: "Canva", icon: "canva.com", apps: &["Canva"], url: "https://www.canva.com/" },
+    Preset { name: "LINE", icon: "line.me", apps: &["LINE"], url: "line://" },
+    Preset { name: "Telegram", icon: "telegram.org", apps: &["Telegram", "Telegram Desktop"], url: "tg://" },
+    Preset { name: "WhatsApp", icon: "whatsapp.com", apps: &["WhatsApp"], url: "whatsapp://" },
 ];
 
 /// 軟體名稱對到快速加入的軟體 → 官網網域
@@ -504,7 +516,8 @@ mod tests {
         assert_eq!(preset_domain("Safari"), None);
         assert_eq!(
             PRESETS.iter().map(|p| p.name).collect::<Vec<_>>(),
-            ["Claude", "ChatGPT", "Gemini", "VS Code", "Obsidian", "Notion", "Discord", "Slack", "Google Meet", "Zoom", "Teams", "Spotify"]
+            ["Claude", "ChatGPT", "Gemini", "VS Code", "Obsidian", "Notion", "Discord", "Slack", "Google Meet", "Zoom", "Teams", "Spotify",
+             "Perplexity", "Copilot", "Gmail", "Google Drive", "Google Calendar", "YouTube", "GitHub", "Figma", "Canva", "LINE", "Telegram", "WhatsApp"]
         );
         let by = |n: &str| PRESETS.iter().find(|p| p.name == n).unwrap();
         let mut l2 = vec![];
