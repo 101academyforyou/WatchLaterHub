@@ -10,6 +10,10 @@
 <meta property="og:description" content="每開一個新分頁，WatchLaterHub 從你在 YouTube 收藏的影片裡隨機挑一部給你，再加上書籤和待辦清單。免費、開源的 Chrome 擴充功能。">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon128.png">
+<link rel="canonical" href="https://onepointzeroone.org/WatchLaterHub/">
+<link rel="alternate" hreflang="zh-Hant" href="https://onepointzeroone.org/WatchLaterHub/">
+<link rel="alternate" hreflang="en" href="https://onepointzeroone.org/WatchLaterHub/en/">
+<link rel="alternate" hreflang="x-default" href="https://onepointzeroone.org/WatchLaterHub/">
 <link rel="icon" type="image/png" sizes="32x32" href="icon32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icon16.png">
 <link rel="apple-touch-icon" href="icon128.png">
@@ -25,6 +29,9 @@ details summary::-webkit-details-marker{display:none}
 details[open] .faq-plus{transform:rotate(45deg)}
 .faq-plus{transition:transform .2s}
 @media (max-width:640px){.nav-link{display:none}nav{padding:12px 16px !important;flex-wrap:nowrap !important}}
+.lang-short{display:none}
+@media (max-width:480px){.lang-long{display:none}.lang-short{display:inline}.lang-switch{padding:8px 12px !important;font-size:14px !important}.nav-cta{margin-left:0 !important;padding:9px 14px !important;font-size:14px !important;white-space:nowrap}}
+@media (max-width:430px){nav a[href="#top"] span{display:none}}
 </style>
 </head>
 <body>
@@ -41,7 +48,8 @@ details[open] .faq-plus{transform:rotate(45deg)}
 <a class="nav-link" href="#features" style="padding: 10px 14px; border-radius: 999px; text-decoration: none; color: #3D4B68; font-size: 15px;">功能</a>
 <a class="nav-link" href="#how" style="padding: 10px 14px; border-radius: 999px; text-decoration: none; color: #3D4B68; font-size: 15px;">怎麼用</a>
 <a class="nav-link" href="#faq" style="padding: 10px 14px; border-radius: 999px; text-decoration: none; color: #3D4B68; font-size: 15px;">常見問題</a>
-<a href="https://chromewebstore.google.com/detail/watchlaterhub/ijighpdloaokiflblkmmecapbmhhecbl" target="_blank" rel="noopener" style="margin-left: 6px; padding: 11px 20px; border-radius: 999px; background: #3767D0; color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 500;">加到 Chrome</a>
+<a class="lang-switch" href="en/" hreflang="en" lang="en" style="padding: 10px 14px; border-radius: 999px; text-decoration: none; color: #3D4B68; font-size: 15px; font-weight: 500; border: 1px solid #D5E3F6; background: #FFFFFF;"><span class="lang-long">English</span><span class="lang-short">EN</span></a>
+<a href="https://chromewebstore.google.com/detail/watchlaterhub/ijighpdloaokiflblkmmecapbmhhecbl" class="nav-cta" target="_blank" rel="noopener" style="margin-left: 6px; padding: 11px 20px; border-radius: 999px; background: #3767D0; color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 500;">加到 Chrome</a>
 </div>
 </nav>
 </header>

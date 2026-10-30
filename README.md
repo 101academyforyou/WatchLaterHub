@@ -77,7 +77,8 @@ src/
   ui.rs        新分頁畫面（DOM 操作）
   ntp.rs       切換 WatchLaterHub ⇄ Chrome 原本的新分頁（工具列圖示）
   chrome.rs    Chrome 擴充功能 API 的 Rust 綁定
-docs/          GitHub Pages：官網、隱私權政策
+docs/          GitHub Pages：官網、隱私權政策（中文）
+  en/          英文版官網與隱私權政策
 extension/
   manifest.json  newtab.html  newtab.css
   newtab.js      3 行：載入 wasm → start_newtab()
